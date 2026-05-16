@@ -1,0 +1,11 @@
+@import "@heroui/styles";
+
+@source "../**/*.{js,ts,jsx,tsx}";
+
+@layer base {
+  :root {
+    --accent: oklch(0.38 0.14 285);
+    --accent-foreground: var(--snow);
+    --background: oklch(0.94 0.02 285);
+  }
+}

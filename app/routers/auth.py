@@ -1,0 +1,42 @@
+from fastapi import APIRouter, Query
+
+from app.dependencies import DbSession, SecurityDep
+from app.models.enums import KioskId
+from app.models.pydantic_schemas import KioskStatusResponse, LoginRequest, LoginResponse
+from app.services.audit import write_audit
+
+router = APIRouter()
+
+
+@router.get("/status", response_model=KioskStatusResponse)
+async def kiosk_status(
+    security: SecurityDep,
+    kiosk_id: KioskId = Query(..., description="ID киоска из ?location="),
+) -> KioskStatusResponse:
+    data = await security.get_kiosk_slot_status(kiosk_id)
+    return KioskStatusResponse(
+        active=data["active"],
+        kiosk_id=kiosk_id,
+        kiosk_token=data.get("kiosk_token"),
+        expires_at_msk=data.get("expires_at_msk"),
+    )
+
+
+@router.post("/login", response_model=LoginResponse)
+async def login(
+    body: LoginRequest,
+    security: SecurityDep,
+    db: DbSession,
+) -> LoginResponse:
+    auth = await security.login(body.pin, body.kiosk_id)
+    await write_audit(
+        db,
+        "kiosk_login",
+        kiosk_id=body.kiosk_id.value,
+        message=f"Kiosk auth until {auth.expires_at_msk}",
+    )
+    return LoginResponse(
+        kiosk_token=auth.kiosk_token,
+        kiosk_id=auth.kiosk_id,
+        expires_at_msk=auth.expires_at_msk,
+    )

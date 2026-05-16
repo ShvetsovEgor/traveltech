@@ -1,0 +1,51 @@
+import type { AppType, KioskId } from "../api/types";
+import { Box, Gamepad2, Palette, Video, type LucideIcon } from "lucide-react";
+
+export const KIOSK_DISPLAY_NAMES: Record<KioskId, string> = {
+  Popova: "Попова",
+  Lobachevsky: "Лобачевского",
+  robot: "Робот",
+};
+
+export type InteractiveItem = {
+  title: string;
+  description: string;
+  icon: LucideIcon;
+  path: string;
+  color: string;
+  appType?: AppType;
+};
+
+export const INTERACTIVE_ITEMS: InteractiveItem[] = [
+  {
+    title: "Нейрохудожник",
+    description: "Картина в стиле великих художников",
+    icon: Palette,
+    path: "/neural-artist",
+    color: "from-purple-500 to-pink-500",
+    appType: "neuro_artist",
+  },
+  {
+    title: "Нейробокс",
+    description: "Стилизация лица и мемы",
+    icon: Box,
+    path: "/neural-box",
+    color: "from-blue-500 to-cyan-500",
+    appType: "neurobox",
+  },
+  {
+    title: "Оживление видео",
+    description: "Фото превращается в видео",
+    icon: Video,
+    path: "/video-animation",
+    color: "from-green-500 to-emerald-500",
+    appType: "video_magic",
+  },
+  {
+    title: "Мини-игры",
+    description: "Змейка, тетрис и ровер",
+    icon: Gamepad2,
+    path: "/mini-games",
+    color: "from-orange-500 to-red-500",
+  },
+];
