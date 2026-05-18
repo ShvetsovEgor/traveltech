@@ -48,9 +48,13 @@ export function SelectionCard({
           <Icon className="size-8" />
         </div>
       )}
-      <Card.Title className="text-xl md:text-2xl">{title}</Card.Title>
+      <Card.Title className="text-lg font-semibold text-foreground sm:text-xl md:text-2xl">
+        {title}
+      </Card.Title>
       {description && (
-        <Card.Description className="mt-1 text-base">{description}</Card.Description>
+        <Card.Description className="mt-1 text-sm text-muted-foreground sm:text-base">
+          {description}
+        </Card.Description>
       )}
       {children}
     </Card>

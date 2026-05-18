@@ -38,7 +38,7 @@ type KioskContextValue = {
   isAuthenticated: boolean;
   login: (pin: string, kioskId: KioskId) => Promise<void>;
   applyRemoteAuth: (token: string, id: KioskId) => void;
-  logout: () => void;
+  logout: () => Promise<void>;
   ensureInteraction: (appType: AppType) => Promise<string>;
   clearInteraction: () => void;
 };
@@ -72,12 +72,20 @@ export function KioskProvider({ children }: { children: ReactNode }) {
     [applyRemoteAuth]
   );
 
-  const logout = useCallback(() => {
+  const logout = useCallback(async () => {
+    const token = kioskToken;
+    if (token) {
+      try {
+        await api.logout(token);
+      } catch {
+        /* clear local state even if backend is unreachable */
+      }
+    }
     setKioskToken(null);
     setInteractionToken(null);
     setAppType(null);
     sessionStorage.removeItem(KIOSK_TOKEN_KEY);
-  }, []);
+  }, [kioskToken]);
 
   const ensureInteraction = useCallback(
     async (type: AppType) => {

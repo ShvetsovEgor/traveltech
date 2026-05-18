@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Gamepad2 } from "lucide-react";
 import { Card, Surface, Typography } from "@heroui/react";
-import { KioskHeader, KioskScreen, SelectionCard } from "../kiosk";
+import { KioskBody, KioskHeader, KioskScreen, SelectionCard } from "../kiosk";
 import { MintimerGameFrame } from "./MintimerGameFrame";
 
 const games = [
@@ -33,12 +33,15 @@ export function MiniGames() {
   return (
     <KioskScreen backTo="/menu">
       <KioskHeader
+        compact
+        centered={false}
         title="Мини-игры"
         subtitle="Выберите игру"
-        icon={<Gamepad2 className="size-20" />}
+        icon={<Gamepad2 />}
       />
 
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 md:gap-6 max-w-5xl mx-auto mb-8">
+      <KioskBody>
+      <div className="mx-auto mb-4 grid max-w-5xl grid-cols-1 gap-3 md:grid-cols-3 md:gap-4">
         {games.map((game) => (
           <SelectionCard
             key={game.id}
@@ -77,6 +80,7 @@ export function MiniGames() {
           </Card>
         </Surface>
       )}
+      </KioskBody>
     </KioskScreen>
   );
 }

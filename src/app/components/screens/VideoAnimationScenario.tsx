@@ -14,7 +14,7 @@ import {
 import { api, resolveMediaUrl } from "../../api/client";
 import { useKiosk } from "../../context/KioskContext";
 import { useTaskPolling } from "../../hooks/useTaskPolling";
-import { KioskHeader, KioskScreen, SelectionCard } from "../kiosk";
+import { KioskBody, KioskHeader, KioskScreen, SelectionCard } from "../kiosk";
 
 const scenarios = [
   { id: "dancing", name: "Танец", emoji: "💃", options: ["Диско", "Балет", "Хип-хоп"] },
@@ -77,13 +77,16 @@ export function VideoAnimationScenario() {
   return (
     <KioskScreen backTo="/video-animation">
       <KioskHeader
+        compact
+        centered={false}
         title={showResult ? "Ваше видео готово!" : "Выберите сценарий"}
         subtitle={showResult ? "Отсканируйте QR-код" : "Что будет происходить на видео?"}
-        icon={<Clapperboard className="size-16" />}
+        icon={<Clapperboard />}
       />
 
+      <KioskBody>
       {error && (
-        <Alert status="danger" className="mb-4 max-w-2xl mx-auto">
+        <Alert status="danger" className="mb-3 max-w-2xl">
           <Alert.Content>
             <Alert.Description>{error}</Alert.Description>
           </Alert.Content>
@@ -92,7 +95,7 @@ export function VideoAnimationScenario() {
 
       {!isGenerating && !showResult && (
         <div className="max-w-6xl mx-auto">
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
+          <div className="mb-4 grid grid-cols-2 gap-3 md:grid-cols-4 md:gap-4">
             {scenarios.map((scenario) => (
               <SelectionCard
                 key={scenario.id}
@@ -108,8 +111,8 @@ export function VideoAnimationScenario() {
           </div>
 
           {selectedScenarioData && (
-            <Surface variant="secondary" className="rounded-3xl p-8 mb-8">
-              <Typography.Heading level={3} className="text-2xl mb-6">
+            <Surface variant="secondary" className="mb-4 rounded-2xl p-4 sm:p-6">
+              <Typography.Heading level={3} className="mb-4 text-xl sm:text-2xl">
                 Выберите локацию:
               </Typography.Heading>
               <div className="flex flex-wrap gap-4">
@@ -160,7 +163,7 @@ export function VideoAnimationScenario() {
       )}
 
       {showResult && mediaUrl && (
-        <div className="flex flex-col md:flex-row items-center justify-center gap-8 max-w-6xl mx-auto">
+        <div className="mx-auto flex max-w-6xl flex-col items-center justify-center gap-4 md:flex-row md:gap-6">
           <Card className="overflow-hidden w-full max-w-2xl aspect-video p-0 bg-black">
             <video src={mediaUrl} controls className="w-full h-full" playsInline />
           </Card>
@@ -172,12 +175,13 @@ export function VideoAnimationScenario() {
       )}
 
       {showResult && (
-        <div className="text-center mt-8">
+        <div className="pt-4 text-center">
           <Button variant="primary" size="lg" onPress={() => navigate("/menu")}>
             Вернуться в меню
           </Button>
         </div>
       )}
+      </KioskBody>
     </KioskScreen>
   );
 }

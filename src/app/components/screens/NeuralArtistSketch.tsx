@@ -4,7 +4,7 @@ import { ReactSketchCanvas, ReactSketchCanvasRef } from "react-sketch-canvas";
 import { Eraser, Minus, Plus, RotateCcw } from "lucide-react";
 import { Button, Card, Surface, Typography } from "@heroui/react";
 import { dataUrlToFile } from "../../utils/media";
-import { KioskHeader, KioskScreen } from "../kiosk";
+import { KioskBody, KioskHeader, KioskScreen } from "../kiosk";
 
 export function NeuralArtistSketch() {
   const navigate = useNavigate();
@@ -31,14 +31,19 @@ export function NeuralArtistSketch() {
   };
 
   return (
-    <KioskScreen backTo="/neural-artist" contentClassName="overflow-hidden">
+    <KioskScreen
+      backTo="/neural-artist"
+      contentClassName="min-h-0 overflow-hidden"
+    >
       <KioskHeader
+        compact
+        centered={false}
         title="Нарисуйте свой набросок"
         subtitle="Рисуйте пальцем или стилусом на холсте"
       />
 
-      <div className="flex flex-col items-center gap-6">
-        <Card className="overflow-hidden w-full max-w-4xl aspect-[4/3] p-0">
+      <KioskBody className="flex min-h-0 flex-col gap-3">
+        <Card className="aspect-[4/3] min-h-0 w-full max-w-4xl flex-1 overflow-hidden p-0 self-center">
           <ReactSketchCanvas
             ref={canvasRef}
             strokeWidth={strokeWidth}
@@ -48,8 +53,8 @@ export function NeuralArtistSketch() {
           />
         </Card>
 
-        <div className="flex flex-wrap items-center justify-center gap-4">
-          <Surface variant="secondary" className="flex items-center gap-2 rounded-xl p-3">
+        <div className="flex shrink-0 flex-wrap items-center justify-center gap-2 pb-1 sm:gap-3">
+          <Surface variant="secondary" className="flex items-center gap-2 rounded-xl p-2 sm:p-3">
             <Button
               variant="secondary"
               isIconOnly
@@ -57,7 +62,7 @@ export function NeuralArtistSketch() {
             >
               <Minus className="size-5" />
             </Button>
-            <Typography.Paragraph className="min-w-12 text-center">
+            <Typography.Paragraph className="min-w-12 text-center text-sm">
               {strokeWidth}px
             </Typography.Paragraph>
             <Button
@@ -71,6 +76,7 @@ export function NeuralArtistSketch() {
 
           <Button
             variant={eraseMode ? "primary" : "secondary"}
+            size="sm"
             onPress={() => setEraseMode(!eraseMode)}
           >
             <Eraser className="size-5" />
@@ -79,6 +85,7 @@ export function NeuralArtistSketch() {
 
           <Button
             variant="secondary"
+            size="sm"
             onPress={() => {
               try {
                 canvasRef.current?.undo();
@@ -91,19 +98,24 @@ export function NeuralArtistSketch() {
             Отменить
           </Button>
 
-          <Button variant="secondary" onPress={() => canvasRef.current?.clearCanvas()}>
+          <Button
+            variant="secondary"
+            size="sm"
+            onPress={() => canvasRef.current?.clearCanvas()}
+          >
             Очистить
           </Button>
 
           <Button
             variant="primary"
+            size="sm"
             onPress={handleComplete}
             isDisabled={submitting}
           >
             {submitting ? "Подготовка..." : "Готово"}
           </Button>
         </div>
-      </div>
+      </KioskBody>
     </KioskScreen>
   );
 }

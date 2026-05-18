@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useNavigate } from "react-router";
 import { Palette } from "lucide-react";
-import { KioskHeader, KioskScreen, SelectionCard } from "../kiosk";
+import { KioskBody, KioskHeader, KioskScreen, SelectionCard } from "../kiosk";
 
 const artistStyles = [
   { id: "vangogh", name: "Ван Гог", image: "🎨", description: "Постимпрессионизм" },
@@ -26,23 +26,27 @@ export function NeuralArtist() {
   return (
     <KioskScreen backTo="/menu">
       <KioskHeader
+        compact
+        centered={false}
         title="Нейрохудожник"
         subtitle="Нарисуйте набросок, и мы превратим его в картину в стиле великих художников"
-        icon={<Palette className="size-16" />}
+        icon={<Palette />}
       />
 
-      <div className="grid grid-cols-2 md:grid-cols-3 gap-6 max-w-5xl mx-auto">
-        {artistStyles.map((style) => (
-          <SelectionCard
-            key={style.id}
-            title={style.name}
-            description={style.description}
-            emoji={style.image}
-            selected={selectedStyle === style.id}
-            onPress={() => handleStyleSelect(style.id)}
-          />
-        ))}
-      </div>
+      <KioskBody>
+        <div className="mx-auto grid w-full max-w-5xl grid-cols-1 gap-3 sm:grid-cols-2 sm:gap-4 md:grid-cols-3 md:gap-5">
+          {artistStyles.map((style) => (
+            <SelectionCard
+              key={style.id}
+              title={style.name}
+              description={style.description}
+              emoji={style.image}
+              selected={selectedStyle === style.id}
+              onPress={() => handleStyleSelect(style.id)}
+            />
+          ))}
+        </div>
+      </KioskBody>
     </KioskScreen>
   );
 }

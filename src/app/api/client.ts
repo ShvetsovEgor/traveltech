@@ -43,6 +43,14 @@ export const api = {
     });
   },
 
+  logout(kioskToken: string) {
+    return request<{ ok: boolean; kiosk_id: KioskId }>("/api/auth/logout", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ kiosk_token: kioskToken }),
+    });
+  },
+
   getKioskStatus(kioskId: KioskId) {
     return request<KioskStatusResponse>(
       `/api/auth/status?kiosk_id=${encodeURIComponent(kioskId)}`

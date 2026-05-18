@@ -2,7 +2,7 @@ import { useNavigate } from "react-router";
 import { Palette, Box, Video, Gamepad2 } from "lucide-react";
 import { useKiosk } from "../../context/KioskContext";
 import type { AppType } from "../../api/types";
-import { KioskHeader, KioskScreen, SelectionCard } from "../kiosk";
+import { KioskBody, KioskHeader, KioskScreen, SelectionCard } from "../kiosk";
 
 const menuItems: {
   title: string;
@@ -65,23 +65,25 @@ export function MainMenu() {
   return (
     <KioskScreen>
       <KioskHeader
+        compact
+        centered={false}
         title="TravelTech"
         subtitle="Выберите интерактив"
-        centered={false}
-        className="pt-4"
       />
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6 max-w-6xl">
-        {menuItems.map((item) => (
-          <SelectionCard
-            key={item.path}
-            title={item.title}
-            description={item.description}
-            icon={item.icon}
-            onPress={() => handleNavigate(item)}
-          />
-        ))}
-      </div>
+      <KioskBody>
+        <div className="grid w-full max-w-6xl grid-cols-1 gap-3 sm:grid-cols-2 sm:gap-4">
+          {menuItems.map((item) => (
+            <SelectionCard
+              key={item.path}
+              title={item.title}
+              description={item.description}
+              icon={item.icon}
+              onPress={() => handleNavigate(item)}
+            />
+          ))}
+        </div>
+      </KioskBody>
     </KioskScreen>
   );
 }

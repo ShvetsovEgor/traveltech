@@ -24,6 +24,15 @@ class KioskStatusResponse(BaseModel):
     expires_at_msk: str | None = None
 
 
+class LogoutRequest(BaseModel):
+    kiosk_token: str
+
+
+class LogoutResponse(BaseModel):
+    ok: bool = True
+    kiosk_id: KioskId
+
+
 class InteractionStartRequest(BaseModel):
     kiosk_token: str
     app_type: AppType

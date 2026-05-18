@@ -7,7 +7,7 @@ import {
   captureVideoFrameAsFile,
   dataUrlToFile,
 } from "../../utils/media";
-import { KioskHeader, KioskScreen } from "../kiosk";
+import { KioskBody, KioskHeader, KioskScreen } from "../kiosk";
 
 export function VideoAnimation() {
   const navigate = useNavigate();
@@ -91,17 +91,20 @@ export function VideoAnimation() {
   return (
     <KioskScreen backTo="/menu">
       <KioskHeader
+        compact
+        centered={false}
         title="Оживление видео"
         subtitle={
           photoTaken
             ? "Проверьте фото и нажмите «Готово»"
             : "Сделайте фото, и мы оживим его в видео"
         }
-        icon={<Video className="size-16" />}
+        icon={<Video />}
       />
 
-      <div className="flex flex-col items-center gap-6">
-        <Card className="relative overflow-hidden w-full max-w-2xl aspect-[4/3] p-0 bg-black">
+      <KioskBody>
+        <div className="flex flex-col items-center gap-4">
+        <Card className="relative aspect-[4/3] w-full max-w-2xl max-h-[min(52vh,420px)] overflow-hidden p-0 bg-black">
           {!photoTaken ? (
             cameraError ? (
               <div className="w-full h-full flex items-center justify-center text-muted p-8 text-center">
@@ -151,7 +154,8 @@ export function VideoAnimation() {
             </Button>
           </div>
         )}
-      </div>
+        </div>
+      </KioskBody>
     </KioskScreen>
   );
 }

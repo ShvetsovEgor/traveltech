@@ -133,6 +133,35 @@ class SecurityService:
             "expires_at_msk": auth.expires_at_msk,
         }
 
+    async def logout_kiosk(self, kiosk_token: str) -> KioskId:
+        """Revoke kiosk auth, free the slot, and end related interactions."""
+        auth = await self.get_kiosk_auth(kiosk_token)
+        await self.redis.delete(
+            self.KIOSK_KEY.format(token=kiosk_token),
+            self.KIOSK_SLOT_KEY.format(kiosk_id=auth.kiosk_id.value),
+        )
+        await self._revoke_interactions_for_kiosk(kiosk_token)
+        return auth.kiosk_id
+
+    async def _revoke_interactions_for_kiosk(self, kiosk_token: str) -> None:
+        cursor = 0
+        pattern = "interaction:*"
+        while True:
+            cursor, keys = await self.redis.client.scan(
+                cursor=cursor,
+                match=pattern,
+                count=100,
+            )
+            for key in keys:
+                if key.endswith(":tasks"):
+                    continue
+                data = await self.redis.get_json(key)
+                if data and data.get("kiosk_token") == kiosk_token:
+                    token = key.split(":", 1)[-1]
+                    await self.revoke_interaction(token)
+            if cursor == 0:
+                break
+
     async def get_kiosk_auth(self, kiosk_token: str) -> KioskAuth:
         data = await self.redis.get_json(self.KIOSK_KEY.format(token=kiosk_token))
         if not data:

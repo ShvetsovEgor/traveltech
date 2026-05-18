@@ -1,6 +1,6 @@
 import { useNavigate, useLocation } from "react-router";
 import { User } from "lucide-react";
-import { KioskHeader, KioskScreen, SelectionCard } from "../kiosk";
+import { KioskBody, KioskHeader, KioskScreen, SelectionCard } from "../kiosk";
 
 const genders = [
   { id: "male", name: "Мужской", emoji: "👨" },
@@ -18,26 +18,28 @@ export function NeuralBoxGender() {
   };
 
   return (
-    <KioskScreen backTo="/neural-box" contentClassName="flex items-center justify-center">
-      <div className="w-full max-w-4xl">
-        <KioskHeader
-          title="Выберите пол"
-          subtitle="Это поможет создать лучший результат"
-          icon={<User className="size-24" />}
-        />
+    <KioskScreen backTo="/neural-box">
+      <KioskHeader
+        compact
+        centered={false}
+        title="Выберите пол"
+        subtitle="Это поможет создать лучший результат"
+        icon={<User />}
+      />
 
-        <div className="flex flex-col md:flex-row gap-6 justify-center">
+      <KioskBody>
+        <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:justify-center sm:gap-4">
           {genders.map((gender) => (
             <SelectionCard
               key={gender.id}
               title={gender.name}
               emoji={gender.emoji}
               onPress={() => handleGenderSelect(gender.id)}
-              className="min-w-[200px] text-center md:p-12"
+              className="min-w-0 flex-1 sm:min-w-[160px] sm:max-w-[220px]"
             />
           ))}
         </div>
-      </div>
+      </KioskBody>
     </KioskScreen>
   );
 }

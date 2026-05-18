@@ -1,6 +1,6 @@
 import { createBrowserRouter } from "react-router";
 import { RootLayout } from "./components/RootLayout";
-import { WelcomeScreen } from "./components/screens/WelcomeScreen";
+import { HomeRoute } from "./components/screens/HomeRoute";
 import { GuideAuthScreen } from "./components/screens/GuideAuthScreen";
 import { MainMenu } from "./components/screens/MainMenu";
 import { NeuralArtist } from "./components/screens/NeuralArtist";
@@ -19,7 +19,7 @@ export const router = createBrowserRouter([
     path: "/",
     Component: RootLayout,
     children: [
-      { index: true, Component: WelcomeScreen },
+      { index: true, Component: HomeRoute },
       { path: "guide/auth", Component: GuideAuthScreen },
       { path: "menu", Component: MainMenu },
       { path: "neural-artist", Component: NeuralArtist },

@@ -1,32 +1,25 @@
-import { useCallback, useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router";
-import { QRCodeSVG } from "qrcode.react";
-import { MapPin, Sparkles, Lock } from "lucide-react";
+import { MapPin, Sparkles } from "lucide-react";
 import {
   Alert,
-  Card,
   Chip,
   Typography,
   cn,
 } from "@heroui/react";
-import {
-  useKiosk,
-  useKioskActivationPoll,
-} from "../../context/KioskContext";
+import { useKiosk } from "../../context/KioskContext";
 import {
   INTERACTIVE_ITEMS,
   KIOSK_DISPLAY_NAMES,
 } from "../../config/kiosk";
 import type { InteractiveItem } from "../../config/kiosk";
-import { buildGuideAuthUrl, getKioskIdFromSearch } from "../../utils/kioskLocation";
-import type { KioskId } from "../../api/types";
-import { KioskHeader, KioskScreen, SelectionCard } from "../kiosk";
+import { getKioskIdFromSearch } from "../../utils/kioskLocation";
+import { InteractiveStrip, KioskScreen } from "../kiosk";
 
 export function WelcomeScreen() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
-  const { isAuthenticated, kioskId, applyRemoteAuth, ensureInteraction } =
-    useKiosk();
+  const { kioskId, ensureInteraction } = useKiosk();
 
   const locationFromUrl = useMemo(
     () => getKioskIdFromSearch(searchParams.toString()),
@@ -34,29 +27,15 @@ export function WelcomeScreen() {
   );
   const effectiveKioskId = locationFromUrl ?? kioskId;
 
-  const [justActivated, setJustActivated] = useState(false);
+  const [justActivated, setJustActivated] = useState(true);
 
-  const authQrUrl = useMemo(
-    () => (effectiveKioskId ? buildGuideAuthUrl(effectiveKioskId) : ""),
-    [effectiveKioskId]
-  );
-
-  const handleActivated = useCallback(
-    (token: string, id: KioskId) => {
-      applyRemoteAuth(token, id);
-      setJustActivated(true);
-    },
-    [applyRemoteAuth]
-  );
-
-  useKioskActivationPoll(
-    effectiveKioskId,
-    Boolean(effectiveKioskId) && !isAuthenticated,
-    handleActivated
-  );
+  useEffect(() => {
+    setJustActivated(true);
+    const t = window.setTimeout(() => setJustActivated(false), 8000);
+    return () => clearTimeout(t);
+  }, []);
 
   const handleInteractive = async (item: InteractiveItem) => {
-    if (!isAuthenticated) return;
     if (item.appType) {
       try {
         await ensureInteraction(item.appType);
@@ -73,12 +52,15 @@ export function WelcomeScreen() {
         className="items-center justify-center bg-accent"
         contentClassName="flex items-center justify-center"
       >
-        <Typography.Heading level={1} className="text-4xl text-accent-foreground mb-4">
+        <Typography.Heading
+          level={1}
+          className="mb-4 text-3xl text-accent-foreground sm:text-4xl"
+        >
           TravelTech
         </Typography.Heading>
-        <Typography.Paragraph className="text-xl text-accent-foreground/80 text-center max-w-lg">
+        <Typography.Paragraph className="max-w-lg text-center text-lg text-accent-foreground/90 sm:text-xl">
           Укажите киоск в адресе:{" "}
-          <Typography.Code className="bg-accent-foreground/20 px-2 py-1 rounded">
+          <Typography.Code className="rounded bg-accent-foreground/20 px-2 py-1">
             ?location=Popova
           </Typography.Code>
         </Typography.Paragraph>
@@ -86,86 +68,65 @@ export function WelcomeScreen() {
     );
   }
 
-  const isActive = isAuthenticated;
-
   return (
     <KioskScreen
-      className="bg-gradient-to-br from-accent via-accent/90 to-accent"
-      contentClassName="max-w-6xl mx-auto"
+      className="overflow-hidden bg-gradient-to-br from-accent via-primary to-accent"
+      contentClassName="flex h-full min-h-0 max-w-4xl flex-col gap-1 !p-3 sm:!p-4 md:!p-5"
     >
-      <KioskHeader
-        title="TravelTech"
-        subtitle={
-          isActive
-            ? justActivated
-              ? "Киоск активирован — выберите интерактив"
-              : "Выберите интерактив"
-            : "Отсканируйте QR-код и введите PIN на телефоне"
-        }
-        icon={<Sparkles className="size-16 text-accent-foreground" />}
-        className="[&_h1]:text-accent-foreground [&_p]:text-accent-foreground/75"
-      />
-
-      <Chip className="mx-auto mb-8 flex w-fit items-center gap-2 bg-accent-foreground/15 text-accent-foreground px-5 py-2">
-        <MapPin className="size-5" />
-        <Chip.Label>Точка: {KIOSK_DISPLAY_NAMES[effectiveKioskId]}</Chip.Label>
-      </Chip>
-
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 items-start">
-        {!isActive && authQrUrl && (
-          <Card className="p-8 flex flex-col items-center">
-            <Card.Title className="text-2xl text-accent mb-2 text-center">
-              Авторизация гида
-            </Card.Title>
-            <Card.Description className="text-center mb-6 max-w-xs">
-              Наведите камеру на QR-код, откройте ссылку в браузере и введите PIN
-            </Card.Description>
-            <QRCodeSVG
-              value={authQrUrl}
-              size={240}
-              level="H"
-              fgColor="oklch(0.38 0.14 285)"
-            />
-            <Typography.Paragraph className="text-xs text-muted mt-4 break-all text-center max-w-xs">
-              {authQrUrl}
-            </Typography.Paragraph>
-            <Typography.Paragraph className="mt-6 text-accent font-medium animate-pulse">
-              Ожидаем вход гида…
-            </Typography.Paragraph>
-          </Card>
-        )}
-
-        {isActive && (
-          <Alert status="success" className="border border-success/40">
-            <Alert.Content>
-              <Alert.Title className="text-2xl">Киоск активен</Alert.Title>
-              <Alert.Description>Можно начинать работу с гостями</Alert.Description>
-            </Alert.Content>
-          </Alert>
-        )}
-
-        <div
-          className={cn(
-            "grid grid-cols-1 sm:grid-cols-2 gap-4",
-            isActive && "lg:col-span-2"
-          )}
-        >
-          {INTERACTIVE_ITEMS.map((item) => (
-            <div key={item.path} className="relative">
-              {!isActive && (
-                <Lock className="absolute top-4 right-4 z-10 size-5 text-muted" />
-              )}
-              <SelectionCard
-                title={item.title}
-                description={item.description}
-                icon={item.icon}
-                disabled={!isActive}
-                onPress={() => handleInteractive(item)}
-                className={cn(!isActive && "opacity-60")}
-              />
-            </div>
-          ))}
+      <header className="shrink-0 text-left">
+        <div className="flex items-center justify-start gap-2 sm:gap-3">
+          <Typography.Heading
+            level={1}
+            className="text-2xl font-bold text-white sm:text-3xl md:text-4xl"
+          >
+            TravelTech
+          </Typography.Heading>
+          <Sparkles
+            className="size-7 shrink-0 text-white sm:size-8 md:size-9"
+            aria-hidden
+          />
         </div>
+
+        <Chip className="mt-1 flex w-fit items-center gap-1.5 bg-white/15 px-3 py-1 text-white sm:mt-1.5 sm:gap-2 sm:px-3.5">
+          <MapPin className="size-3.5 sm:size-4" aria-hidden />
+          <Chip.Label className="text-xs sm:text-sm">
+            Точка: {KIOSK_DISPLAY_NAMES[effectiveKioskId]}
+          </Chip.Label>
+        </Chip>
+
+        <Typography.Paragraph className="mt-1 text-sm text-white/90 sm:text-base">
+          {justActivated
+            ? "Киоск активирован — выберите интерактив"
+            : "Выберите интерактив"}
+        </Typography.Paragraph>
+      </header>
+
+      {justActivated && (
+        <Alert
+          status="success"
+          className="shrink-0 border border-success/40 bg-white/95 py-2"
+        >
+          <Alert.Content>
+            <Alert.Title className="text-sm text-foreground sm:text-base">
+              Киоск активен — можно начинать работу
+            </Alert.Title>
+          </Alert.Content>
+        </Alert>
+      )}
+
+      <div className="flex min-h-0 flex-1 flex-col justify-start gap-2 overflow-visible sm:gap-2.5">
+        {INTERACTIVE_ITEMS.map((item, index) => (
+          <InteractiveStrip
+            key={item.path}
+            compact
+            index={index}
+            title={item.title}
+            description={item.description}
+            icon={item.icon}
+            gradient={item.color}
+            onPress={() => handleInteractive(item)}
+          />
+        ))}
       </div>
     </KioskScreen>
   );

@@ -2,7 +2,7 @@ import { useState } from "react";
 import { useNavigate } from "react-router";
 import { Box, Check } from "lucide-react";
 import { Button, Chip, Surface, Typography } from "@heroui/react";
-import { KioskHeader, KioskScreen, SelectionCard } from "../kiosk";
+import { KioskBody, KioskHeader, KioskScreen, SelectionCard } from "../kiosk";
 
 const styles = [
   { id: "anime", name: "Аниме", emoji: "🎌", options: ["Яркие цвета", "Большие глаза"] },
@@ -40,55 +40,59 @@ export function NeuralBox() {
   return (
     <KioskScreen backTo="/menu">
       <KioskHeader
+        compact
+        centered={false}
         title="Нейробокс"
         subtitle="Преобразите своё лицо в разных стилях и мемах"
-        icon={<Box className="size-16" />}
+        icon={<Box />}
       />
 
-      <div className="max-w-6xl mx-auto">
-        <div className="grid grid-cols-2 md:grid-cols-3 gap-4 mb-8">
-          {styles.map((style) => (
-            <SelectionCard
-              key={style.id}
-              title={style.name}
-              emoji={style.emoji}
-              selected={selectedStyle === style.id}
-              onPress={() => handleStyleSelect(style.id)}
-            />
-          ))}
-        </div>
-
-        {selectedStyleData && (
-          <Surface variant="secondary" className="rounded-3xl p-8 mb-8">
-            <Typography.Heading level={3} className="text-2xl mb-6">
-              Настройки стиля:
-            </Typography.Heading>
-            <div className="flex flex-wrap gap-4">
-              {selectedStyleData.options.map((option) => (
-                <Chip
-                  key={option}
-                  className="cursor-pointer px-4 py-2"
-                  color={selectedOptions.includes(option) ? "accent" : "default"}
-                  onClick={() => toggleOption(option)}
-                >
-                  {selectedOptions.includes(option) && (
-                    <Check className="size-4 mr-1 inline" />
-                  )}
-                  <Chip.Label>{option}</Chip.Label>
-                </Chip>
-              ))}
-            </div>
-          </Surface>
-        )}
-
-        {selectedStyle && (
-          <div className="text-center">
-            <Button variant="primary" size="lg" onPress={handleContinue}>
-              Продолжить
-            </Button>
+      <KioskBody>
+        <div className="mx-auto max-w-6xl">
+          <div className="mb-4 grid grid-cols-2 gap-3 md:grid-cols-3 md:gap-4">
+            {styles.map((style) => (
+              <SelectionCard
+                key={style.id}
+                title={style.name}
+                emoji={style.emoji}
+                selected={selectedStyle === style.id}
+                onPress={() => handleStyleSelect(style.id)}
+              />
+            ))}
           </div>
-        )}
-      </div>
+
+          {selectedStyleData && (
+            <Surface variant="secondary" className="mb-4 rounded-2xl p-4 sm:p-6">
+              <Typography.Heading level={3} className="mb-4 text-xl sm:text-2xl">
+                Настройки стиля:
+              </Typography.Heading>
+              <div className="flex flex-wrap gap-3">
+                {selectedStyleData.options.map((option) => (
+                  <Chip
+                    key={option}
+                    className="cursor-pointer px-4 py-2"
+                    color={selectedOptions.includes(option) ? "accent" : "default"}
+                    onClick={() => toggleOption(option)}
+                  >
+                    {selectedOptions.includes(option) && (
+                      <Check className="mr-1 inline size-4" />
+                    )}
+                    <Chip.Label>{option}</Chip.Label>
+                  </Chip>
+                ))}
+              </div>
+            </Surface>
+          )}
+
+          {selectedStyle && (
+            <div className="pt-2 text-center">
+              <Button variant="primary" size="lg" onPress={handleContinue}>
+                Продолжить
+              </Button>
+            </div>
+          )}
+        </div>
+      </KioskBody>
     </KioskScreen>
   );
 }

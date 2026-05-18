@@ -3,7 +3,7 @@ import { QRCodeSVG } from "qrcode.react";
 import { Download } from "lucide-react";
 import { Button, Card, Typography } from "@heroui/react";
 import { resolveMediaUrl } from "../../api/client";
-import { KioskHeader, KioskScreen } from "../kiosk";
+import { KioskBody, KioskHeader, KioskScreen } from "../kiosk";
 
 export function NeuralArtistResult() {
   const navigate = useNavigate();
@@ -29,11 +29,15 @@ export function NeuralArtistResult() {
   return (
     <KioskScreen backTo="/neural-artist">
       <KioskHeader
+        compact
+        centered={false}
         title="Ваш шедевр готов!"
         subtitle="Отсканируйте QR-код для получения изображения"
+        icon={<Download />}
       />
 
-      <div className="flex flex-col md:flex-row items-center justify-center gap-8 max-w-6xl mx-auto">
+      <KioskBody>
+      <div className="mx-auto flex max-w-6xl flex-col items-center justify-center gap-4 md:flex-row md:gap-6">
         <Card className="p-4">
           <img
             src={imageSrc}
@@ -54,11 +58,12 @@ export function NeuralArtistResult() {
         </Card>
       </div>
 
-      <div className="text-center mt-12">
+      <div className="pt-4 text-center">
         <Button variant="primary" size="lg" onPress={() => navigate("/menu")}>
           Вернуться в меню
         </Button>
       </div>
+      </KioskBody>
     </KioskScreen>
   );
 }

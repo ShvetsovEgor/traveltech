@@ -13,7 +13,7 @@ import { api, resolveMediaUrl } from "../../api/client";
 import { useKiosk } from "../../context/KioskContext";
 import { useTaskPolling } from "../../hooks/useTaskPolling";
 import { captureVideoFrameAsDataUrl, dataUrlToFile } from "../../utils/media";
-import { KioskHeader, KioskScreen } from "../kiosk";
+import { KioskBody, KioskHeader, KioskScreen } from "../kiosk";
 
 export function NeuralBoxPhoto() {
   const navigate = useNavigate();
@@ -142,6 +142,8 @@ export function NeuralBoxPhoto() {
   return (
     <KioskScreen backTo="/neural-box/gender">
       <KioskHeader
+        compact
+        centered={false}
         title={showResult ? "Ваш результат!" : "Сделайте фото"}
         subtitle={
           showResult
@@ -150,10 +152,12 @@ export function NeuralBoxPhoto() {
               ? "Проверьте фото и нажмите «Готово»"
               : "Разместитесь в центре кадра"
         }
+        icon={<Camera />}
       />
 
+      <KioskBody>
       {error && (
-        <Alert status="danger" className="mb-4 max-w-2xl mx-auto">
+        <Alert status="danger" className="mb-3 max-w-2xl">
           <Alert.Content>
             <Alert.Description>{error}</Alert.Description>
           </Alert.Content>
@@ -161,8 +165,8 @@ export function NeuralBoxPhoto() {
       )}
 
       {!showResult ? (
-        <div className="flex flex-col items-center gap-6">
-          <Card className="relative overflow-hidden w-full max-w-2xl aspect-[4/3] p-0 bg-black">
+        <div className="flex flex-col items-center gap-4">
+          <Card className="relative aspect-[4/3] w-full max-w-2xl max-h-[min(52vh,420px)] overflow-hidden p-0 bg-black">
             {!photoTaken ? (
               cameraError ? (
                 <div className="w-full h-full flex items-center justify-center text-muted p-8 text-center">
@@ -215,7 +219,7 @@ export function NeuralBoxPhoto() {
           ) : null}
         </div>
       ) : (
-        <div className="flex flex-col md:flex-row items-center justify-center gap-8 max-w-6xl mx-auto">
+        <div className="flex flex-col items-center justify-center gap-4 md:flex-row md:gap-6 max-w-6xl mx-auto">
           {displayUrl && (
             <Card className="p-4">
               <img
@@ -235,12 +239,13 @@ export function NeuralBoxPhoto() {
       )}
 
       {showResult && (
-        <div className="text-center mt-8">
+        <div className="pt-4 text-center">
           <Button variant="primary" size="lg" onPress={() => navigate("/menu")}>
             Вернуться в меню
           </Button>
         </div>
       )}
+      </KioskBody>
     </KioskScreen>
   );
 }

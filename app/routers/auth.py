@@ -2,7 +2,13 @@ from fastapi import APIRouter, Query
 
 from app.dependencies import DbSession, SecurityDep
 from app.models.enums import KioskId
-from app.models.pydantic_schemas import KioskStatusResponse, LoginRequest, LoginResponse
+from app.models.pydantic_schemas import (
+    KioskStatusResponse,
+    LoginRequest,
+    LoginResponse,
+    LogoutRequest,
+    LogoutResponse,
+)
 from app.services.audit import write_audit
 
 router = APIRouter()
@@ -40,3 +46,19 @@ async def login(
         kiosk_id=auth.kiosk_id,
         expires_at_msk=auth.expires_at_msk,
     )
+
+
+@router.post("/logout", response_model=LogoutResponse)
+async def logout(
+    body: LogoutRequest,
+    security: SecurityDep,
+    db: DbSession,
+) -> LogoutResponse:
+    kiosk_id = await security.logout_kiosk(body.kiosk_token)
+    await write_audit(
+        db,
+        "kiosk_logout",
+        kiosk_id=kiosk_id.value,
+        message="Kiosk session ended by guide",
+    )
+    return LogoutResponse(ok=True, kiosk_id=kiosk_id)
