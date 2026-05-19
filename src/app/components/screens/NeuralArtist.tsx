@@ -24,7 +24,7 @@ export function NeuralArtist() {
   };
 
   return (
-    <KioskScreen backTo="/menu">
+    <KioskScreen backTo="/">
       <KioskHeader
         compact
         centered={false}

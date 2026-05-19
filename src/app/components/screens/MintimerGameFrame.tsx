@@ -1,16 +1,21 @@
+import { forwardRef } from "react";
+import { GameIframe } from "./GameIframe";
+
 type MintimerGameFrameProps = {
   className?: string;
 };
 
-/** Canvas-игра «Приключения МинТимера» из mintimer_game/ */
-export function MintimerGameFrame({ className }: MintimerGameFrameProps) {
+/** Canvas-игра «Миссия Мин-Тимера» из mintimer_game/ */
+export const MintimerGameFrame = forwardRef<
+  HTMLIFrameElement,
+  MintimerGameFrameProps
+>(function MintimerGameFrame({ className }, ref) {
   return (
-    <iframe
+    <GameIframe
+      ref={ref}
       src="/mintimer_game/index.html"
-      title="Приключения МинТимера"
+      title="Миссия Мин-Тимера"
       className={className}
-      allow="autoplay"
-      style={{ border: 0, background: "#101320" }}
     />
   );
-}
+});

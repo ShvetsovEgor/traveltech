@@ -1,6 +1,5 @@
 import { useState, useEffect } from "react";
 import { useNavigate, useLocation } from "react-router";
-import { QRCodeSVG } from "qrcode.react";
 import { Check, Play, Clapperboard } from "lucide-react";
 import {
   Alert,
@@ -14,7 +13,13 @@ import {
 import { api, resolveMediaUrl } from "../../api/client";
 import { useKiosk } from "../../context/KioskContext";
 import { useTaskPolling } from "../../hooks/useTaskPolling";
-import { KioskBody, KioskHeader, KioskScreen, SelectionCard } from "../kiosk";
+import {
+  KioskBody,
+  KioskHeader,
+  KioskScreen,
+  MediaWithQrOverlay,
+  SelectionCard,
+} from "../kiosk";
 
 const scenarios = [
   { id: "dancing", name: "Танец", emoji: "💃", options: ["Диско", "Балет", "Хип-хоп"] },
@@ -80,7 +85,7 @@ export function VideoAnimationScenario() {
         compact
         centered={false}
         title={showResult ? "Ваше видео готово!" : "Выберите сценарий"}
-        subtitle={showResult ? "Отсканируйте QR-код" : "Что будет происходить на видео?"}
+        subtitle={showResult ? undefined : "Что будет происходить на видео?"}
         icon={<Clapperboard />}
       />
 
@@ -153,30 +158,31 @@ export function VideoAnimationScenario() {
             className="mx-auto mb-8"
             aria-label="Создание видео"
           />
-          <Typography.Heading level={2} className="text-4xl mb-4">
+          <Typography.Heading level={2} className="mb-4 text-4xl font-bold text-foreground">
             Создаём видео...
           </Typography.Heading>
-          <Typography.Paragraph className="text-xl text-muted">
+          <Typography.Paragraph className="text-lg text-foreground/75 md:text-xl">
             Это может занять несколько минут
           </Typography.Paragraph>
         </div>
       )}
 
       {showResult && mediaUrl && (
-        <div className="mx-auto flex max-w-6xl flex-col items-center justify-center gap-4 md:flex-row md:gap-6">
-          <Card className="overflow-hidden w-full max-w-2xl aspect-video p-0 bg-black">
-            <video src={mediaUrl} controls className="w-full h-full" playsInline />
-          </Card>
-          <Card className="p-8">
-            <Card.Title className="text-2xl mb-4 text-center">Скачать видео</Card.Title>
-            <QRCodeSVG value={mediaUrl} size={256} level="H" fgColor="oklch(0.38 0.14 285)" />
-          </Card>
+        <div className="flex flex-col items-center gap-3">
+          <MediaWithQrOverlay
+            url={mediaUrl}
+            alt="Сгенерированное видео"
+            variant="video"
+          />
+          <Typography.Paragraph className="text-center text-sm text-muted-foreground">
+            Отсканируйте QR-код в углу видео
+          </Typography.Paragraph>
         </div>
       )}
 
       {showResult && (
         <div className="pt-4 text-center">
-          <Button variant="primary" size="lg" onPress={() => navigate("/menu")}>
+          <Button variant="primary" size="lg" onPress={() => navigate("/")}>
             Вернуться в меню
           </Button>
         </div>

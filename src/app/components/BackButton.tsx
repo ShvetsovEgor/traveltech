@@ -1,4 +1,4 @@
-import { useNavigate } from "react-router";
+import { useNavigate, useLocation } from "react-router";
 import { ArrowLeft } from "lucide-react";
 import { Button } from "@heroui/react";
 
@@ -9,10 +9,11 @@ interface BackButtonProps {
 
 export function BackButton({ to, className = "" }: BackButtonProps) {
   const navigate = useNavigate();
+  const location = useLocation();
 
   const handleClick = () => {
     if (to) {
-      navigate(to);
+      navigate({ pathname: to, search: location.search });
     } else {
       navigate(-1);
     }

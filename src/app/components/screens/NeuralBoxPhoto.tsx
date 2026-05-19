@@ -1,6 +1,5 @@
 import { useState, useRef, useEffect } from "react";
 import { useNavigate, useLocation } from "react-router";
-import { QRCodeSVG } from "qrcode.react";
 import { Camera, RotateCcw } from "lucide-react";
 import {
   Alert,
@@ -13,7 +12,7 @@ import { api, resolveMediaUrl } from "../../api/client";
 import { useKiosk } from "../../context/KioskContext";
 import { useTaskPolling } from "../../hooks/useTaskPolling";
 import { captureVideoFrameAsDataUrl, dataUrlToFile } from "../../utils/media";
-import { KioskBody, KioskHeader, KioskScreen } from "../kiosk";
+import { KioskBody, KioskHeader, KioskScreen, MediaWithQrOverlay } from "../kiosk";
 
 export function NeuralBoxPhoto() {
   const navigate = useNavigate();
@@ -145,13 +144,6 @@ export function NeuralBoxPhoto() {
         compact
         centered={false}
         title={showResult ? "Ваш результат!" : "Сделайте фото"}
-        subtitle={
-          showResult
-            ? "Отсканируйте QR-код для получения фото"
-            : photoTaken
-              ? "Проверьте фото и нажмите «Готово»"
-              : "Разместитесь в центре кадра"
-        }
         icon={<Camera />}
       />
 
@@ -166,6 +158,16 @@ export function NeuralBoxPhoto() {
 
       {!showResult ? (
         <div className="flex flex-col items-center gap-4">
+          {!photoTaken && (
+            <Typography.Paragraph className="text-center text-sm text-muted-foreground">
+              Разместитесь в центре кадра
+            </Typography.Paragraph>
+          )}
+          {photoTaken && !isGenerating && (
+            <Typography.Paragraph className="text-center text-sm text-muted-foreground">
+              Проверьте фото и нажмите «Готово»
+            </Typography.Paragraph>
+          )}
           <Card className="relative aspect-[4/3] w-full max-w-2xl max-h-[min(52vh,420px)] overflow-hidden p-0 bg-black">
             {!photoTaken ? (
               cameraError ? (
@@ -219,28 +221,19 @@ export function NeuralBoxPhoto() {
           ) : null}
         </div>
       ) : (
-        <div className="flex flex-col items-center justify-center gap-4 md:flex-row md:gap-6 max-w-6xl mx-auto">
+        <div className="flex flex-col items-center gap-3">
           {displayUrl && (
-            <Card className="p-4">
-              <img
-                src={displayUrl}
-                alt="Результат"
-                className="w-full max-w-lg rounded-2xl aspect-square object-cover"
-              />
-            </Card>
+            <MediaWithQrOverlay url={displayUrl} alt="Результат" />
           )}
-          <Card className="p-8">
-            <Card.Title className="text-2xl mb-4 text-center">Скачать фото</Card.Title>
-            {displayUrl && (
-              <QRCodeSVG value={displayUrl} size={256} level="H" fgColor="oklch(0.38 0.14 285)" />
-            )}
-          </Card>
+          <Typography.Paragraph className="text-center text-sm text-muted-foreground">
+            Отсканируйте QR-код в углу фото
+          </Typography.Paragraph>
         </div>
       )}
 
       {showResult && (
         <div className="pt-4 text-center">
-          <Button variant="primary" size="lg" onPress={() => navigate("/menu")}>
+          <Button variant="primary" size="lg" onPress={() => navigate("/")}>
             Вернуться в меню
           </Button>
         </div>

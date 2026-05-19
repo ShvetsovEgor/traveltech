@@ -1,7 +1,15 @@
 import { useState } from "react";
 import { useNavigate } from "react-router";
 import { Box, Check } from "lucide-react";
-import { Button, Chip, Surface, Typography } from "@heroui/react";
+import { Button, Chip } from "@heroui/react";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "../ui/dialog";
 import { KioskBody, KioskHeader, KioskScreen, SelectionCard } from "../kiosk";
 
 const styles = [
@@ -15,11 +23,21 @@ const styles = [
 
 export function NeuralBox() {
   const navigate = useNavigate();
-  const [selectedStyle, setSelectedStyle] = useState<string | null>(null);
+  const [activeStyleId, setActiveStyleId] = useState<string | null>(null);
+  const [pickerOpen, setPickerOpen] = useState(false);
   const [selectedOptions, setSelectedOptions] = useState<string[]>([]);
 
-  const handleStyleSelect = (styleId: string) => {
-    setSelectedStyle(styleId);
+  const activeStyle = styles.find((s) => s.id === activeStyleId);
+
+  const openStylePicker = (styleId: string) => {
+    setActiveStyleId(styleId);
+    setSelectedOptions([]);
+    setPickerOpen(true);
+  };
+
+  const closeStylePicker = () => {
+    setPickerOpen(false);
+    setActiveStyleId(null);
     setSelectedOptions([]);
   };
 
@@ -32,13 +50,14 @@ export function NeuralBox() {
   };
 
   const handleContinue = () => {
-    navigate("/neural-box/gender", { state: { style: selectedStyle, options: selectedOptions } });
+    if (!activeStyleId) return;
+    navigate("/neural-box/gender", {
+      state: { style: activeStyleId, options: selectedOptions },
+    });
   };
 
-  const selectedStyleData = styles.find((s) => s.id === selectedStyle);
-
   return (
-    <KioskScreen backTo="/menu">
+    <KioskScreen backTo="/">
       <KioskHeader
         compact
         centered={false}
@@ -49,28 +68,46 @@ export function NeuralBox() {
 
       <KioskBody>
         <div className="mx-auto max-w-6xl">
-          <div className="mb-4 grid grid-cols-2 gap-3 md:grid-cols-3 md:gap-4">
+          <div className="grid grid-cols-2 gap-3 md:grid-cols-3 md:gap-4">
             {styles.map((style) => (
               <SelectionCard
                 key={style.id}
                 title={style.name}
                 emoji={style.emoji}
-                selected={selectedStyle === style.id}
-                onPress={() => handleStyleSelect(style.id)}
+                selected={activeStyleId === style.id && pickerOpen}
+                onPress={() => openStylePicker(style.id)}
               />
             ))}
           </div>
+        </div>
+      </KioskBody>
 
-          {selectedStyleData && (
-            <Surface variant="secondary" className="mb-4 rounded-2xl p-4 sm:p-6">
-              <Typography.Heading level={3} className="mb-4 text-xl sm:text-2xl">
-                Настройки стиля:
-              </Typography.Heading>
-              <div className="flex flex-wrap gap-3">
-                {selectedStyleData.options.map((option) => (
+      <Dialog
+        open={pickerOpen}
+        onOpenChange={(open) => {
+          if (!open) closeStylePicker();
+        }}
+      >
+        <DialogContent className="max-w-md gap-5 rounded-3xl border-border p-6 sm:max-w-lg sm:p-8">
+          {activeStyle && (
+            <>
+              <DialogHeader className="items-center gap-3 text-center sm:items-center sm:text-center">
+                <span className="text-6xl leading-none" aria-hidden>
+                  {activeStyle.emoji}
+                </span>
+                <DialogTitle className="text-2xl font-bold sm:text-3xl">
+                  {activeStyle.name}
+                </DialogTitle>
+                <DialogDescription className="text-base text-muted-foreground">
+                  Добавьте опции к стилю
+                </DialogDescription>
+              </DialogHeader>
+
+              <div className="flex flex-wrap justify-center gap-3">
+                {activeStyle.options.map((option) => (
                   <Chip
                     key={option}
-                    className="cursor-pointer px-4 py-2"
+                    className="cursor-pointer px-4 py-2.5 text-base"
                     color={selectedOptions.includes(option) ? "accent" : "default"}
                     onClick={() => toggleOption(option)}
                   >
@@ -81,18 +118,29 @@ export function NeuralBox() {
                   </Chip>
                 ))}
               </div>
-            </Surface>
-          )}
 
-          {selectedStyle && (
-            <div className="pt-2 text-center">
-              <Button variant="primary" size="lg" onPress={handleContinue}>
-                Продолжить
-              </Button>
-            </div>
+              <DialogFooter className="flex-col gap-3 sm:flex-col">
+                <Button
+                  variant="primary"
+                  size="lg"
+                  className="w-full"
+                  onPress={handleContinue}
+                >
+                  Продолжить
+                </Button>
+                <Button
+                  variant="secondary"
+                  size="lg"
+                  className="w-full"
+                  onPress={closeStylePicker}
+                >
+                  Отмена
+                </Button>
+              </DialogFooter>
+            </>
           )}
-        </div>
-      </KioskBody>
+        </DialogContent>
+      </Dialog>
     </KioskScreen>
   );
 }

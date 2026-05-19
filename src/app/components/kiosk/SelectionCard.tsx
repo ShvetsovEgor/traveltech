@@ -5,6 +5,8 @@ import { Card, cn } from "@heroui/react";
 type SelectionCardProps = {
   title: string;
   description?: string;
+  coverSrc?: string;
+  coverAlt?: string;
   emoji?: string;
   icon?: LucideIcon;
   iconClassName?: string;
@@ -18,6 +20,8 @@ type SelectionCardProps = {
 export function SelectionCard({
   title,
   description,
+  coverSrc,
+  coverAlt = "",
   emoji,
   icon: Icon,
   iconClassName,
@@ -27,17 +31,32 @@ export function SelectionCard({
   className,
   children,
 }: SelectionCardProps) {
+  const withEmoji = Boolean(emoji);
+  const withCover = Boolean(coverSrc);
+  const centered = withEmoji || withCover;
+
   return (
     <Card
       className={cn(
         "p-5 md:p-6 transition-shadow cursor-pointer h-full",
+        centered && "flex flex-col items-center text-center",
         selected && "ring-2 ring-accent shadow-lg",
         disabled && "opacity-50 cursor-not-allowed pointer-events-none",
         className
       )}
       onClick={disabled ? undefined : onPress}
     >
-      {emoji && <div className="text-5xl md:text-6xl mb-3 text-center">{emoji}</div>}
+      {coverSrc && (
+        <div className="mb-4 flex h-28 w-full items-center justify-center overflow-hidden rounded-2xl bg-default-100 md:h-36">
+          <img
+            src={coverSrc}
+            alt={coverAlt || title}
+            className="max-h-full max-w-full object-contain"
+            draggable={false}
+          />
+        </div>
+      )}
+      {emoji && <div className="mb-3 text-5xl leading-none md:text-6xl">{emoji}</div>}
       {Icon && (
         <div
           className={cn(
@@ -48,7 +67,12 @@ export function SelectionCard({
           <Icon className="size-8" />
         </div>
       )}
-      <Card.Title className="text-lg font-semibold text-foreground sm:text-xl md:text-2xl">
+      <Card.Title
+        className={cn(
+          "text-lg font-semibold text-foreground sm:text-xl md:text-2xl",
+          centered && "w-full"
+        )}
+      >
         {title}
       </Card.Title>
       {description && (

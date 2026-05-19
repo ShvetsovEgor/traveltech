@@ -89,21 +89,21 @@ export function VideoAnimation() {
   };
 
   return (
-    <KioskScreen backTo="/menu">
+    <KioskScreen backTo="/">
       <KioskHeader
         compact
         centered={false}
         title="Оживление видео"
-        subtitle={
-          photoTaken
-            ? "Проверьте фото и нажмите «Готово»"
-            : "Сделайте фото, и мы оживим его в видео"
-        }
         icon={<Video />}
       />
 
       <KioskBody>
         <div className="flex flex-col items-center gap-4">
+          <Typography.Paragraph className="text-center text-sm text-muted-foreground">
+            {photoTaken
+              ? "Проверьте фото и нажмите «Готово»"
+              : "Сделайте фото, и мы оживим его в видео"}
+          </Typography.Paragraph>
         <Card className="relative aspect-[4/3] w-full max-w-2xl max-h-[min(52vh,420px)] overflow-hidden p-0 bg-black">
           {!photoTaken ? (
             cameraError ? (

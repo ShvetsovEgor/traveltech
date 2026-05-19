@@ -28,14 +28,13 @@ export function NeuralBoxGender() {
       />
 
       <KioskBody>
-        <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:justify-center sm:gap-4">
+        <div className="mx-auto grid max-w-3xl grid-cols-1 gap-3 sm:grid-cols-3 sm:gap-4">
           {genders.map((gender) => (
             <SelectionCard
               key={gender.id}
               title={gender.name}
               emoji={gender.emoji}
               onPress={() => handleGenderSelect(gender.id)}
-              className="min-w-0 flex-1 sm:min-w-[160px] sm:max-w-[220px]"
             />
           ))}
         </div>

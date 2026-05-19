@@ -1,9 +1,8 @@
 import { useNavigate, useLocation } from "react-router";
-import { QRCodeSVG } from "qrcode.react";
 import { Download } from "lucide-react";
-import { Button, Card, Typography } from "@heroui/react";
+import { Button, Typography } from "@heroui/react";
 import { resolveMediaUrl } from "../../api/client";
-import { KioskBody, KioskHeader, KioskScreen } from "../kiosk";
+import { KioskBody, KioskHeader, KioskScreen, MediaWithQrOverlay } from "../kiosk";
 
 export function NeuralArtistResult() {
   const navigate = useNavigate();
@@ -32,37 +31,22 @@ export function NeuralArtistResult() {
         compact
         centered={false}
         title="Ваш шедевр готов!"
-        subtitle="Отсканируйте QR-код для получения изображения"
         icon={<Download />}
       />
 
       <KioskBody>
-      <div className="mx-auto flex max-w-6xl flex-col items-center justify-center gap-4 md:flex-row md:gap-6">
-        <Card className="p-4">
-          <img
-            src={imageSrc}
-            alt={`Результат в стиле ${style}`}
-            className="w-full max-w-lg rounded-2xl aspect-square object-cover"
-          />
-        </Card>
+        <div className="flex flex-col items-center gap-3">
+          <MediaWithQrOverlay url={imageSrc} alt={`Результат в стиле ${style}`} />
+          <Typography.Paragraph className="text-center text-sm text-muted-foreground">
+            Отсканируйте QR-код в углу изображения
+          </Typography.Paragraph>
+        </div>
 
-        <Card className="p-8">
-          <div className="flex flex-col items-center">
-            <Download className="size-12 text-accent mb-4" />
-            <Card.Title className="text-2xl mb-4">Скачать результат</Card.Title>
-            <QRCodeSVG value={imageSrc} size={256} level="H" fgColor="oklch(0.38 0.14 285)" />
-            <Card.Description className="mt-4 text-center max-w-xs">
-              Отсканируйте QR-код телефоном
-            </Card.Description>
-          </div>
-        </Card>
-      </div>
-
-      <div className="pt-4 text-center">
-        <Button variant="primary" size="lg" onPress={() => navigate("/menu")}>
-          Вернуться в меню
-        </Button>
-      </div>
+        <div className="pt-4 text-center">
+          <Button variant="primary" size="lg" onPress={() => navigate("/")}>
+            Вернуться в меню
+          </Button>
+        </div>
       </KioskBody>
     </KioskScreen>
   );

@@ -1,0 +1,112 @@
+{
+  "technical": {
+    "image": "4k resolution, cinematic lighting, highly detailed, professional artwork, preserve composition from the input sketch.",
+    "portrait": "4k resolution, cinematic portrait, photorealistic face, sharp focus, studio quality, preserve facial identity from the input photo.",
+    "video": "cinematic 16:9, smooth motion, 8 seconds, high quality, natural movement.",
+    "face_lock_tag": "[FACE LOCK: ON]"
+  },
+  "artist_styles": {
+    "vangogh": {
+      "base": "Transform the sketch into a post-impressionist oil painting in the style of Vincent van Gogh, swirling brushstrokes, vivid colors."
+    },
+    "picasso": {
+      "base": "Transform the sketch into a cubist painting in the style of Pablo Picasso, geometric forms, fragmented perspective."
+    },
+    "monet": {
+      "base": "Transform the sketch into an impressionist painting in the style of Claude Monet, soft light, atmospheric brushwork."
+    },
+    "dali": {
+      "base": "Transform the sketch into a surrealist painting in the style of Salvador Dalí, dreamlike imagery, symbolic elements."
+    },
+    "kandinsky": {
+      "base": "Transform the sketch into an abstract composition in the style of Wassily Kandinsky, bold colors, geometric abstraction."
+    },
+    "klimt": {
+      "base": "Transform the sketch into an art nouveau painting in the style of Gustav Klimt, decorative patterns, gold accents."
+    }
+  },
+  "neurobox_styles": {
+    "anime": {
+      "base": "Stylize the portrait as high-quality anime art.",
+      "option_map": {
+        "Яркие цвета": "vibrant saturated palette",
+        "Большие глаза": "large expressive anime eyes"
+      }
+    },
+    "cartoon": {
+      "base": "Stylize the portrait as a modern cartoon character.",
+      "option_map": {
+        "3D стиль": "3D Pixar-style rendering",
+        "Пиксельный": "pixel art retro game style"
+      }
+    },
+    "renaissance": {
+      "base": "Stylize the portrait as a Renaissance oil painting.",
+      "option_map": {
+        "Классика": "classical Renaissance composition",
+        "Барокко": "dramatic baroque lighting and richness"
+      }
+    },
+    "cyberpunk": {
+      "base": "Stylize the portrait as cyberpunk futuristic character.",
+      "option_map": {
+        "Неон": "neon lights and glowing accents",
+        "Темный фон": "dark moody background"
+      }
+    },
+    "zombie": {
+      "base": "Stylize the portrait as a zombie character.",
+      "option_map": {
+        "Страшный": "horror zombie makeup, scary atmosphere",
+        "Веселый": "cartoon-friendly zombie, humorous tone"
+      }
+    },
+    "superhero": {
+      "base": "Stylize the portrait as a comic book superhero.",
+      "option_map": {
+        "Marvel": "Marvel cinematic superhero style",
+        "DC": "DC comics dramatic superhero style"
+      }
+    }
+  },
+  "gender": {
+    "male": "The subject is male.",
+    "female": "The subject is female.",
+    "neutral": "Preserve a neutral, androgynous presentation.",
+    "other": "Preserve the subject's appearance as in the photo."
+  },
+  "video_scenarios": {
+    "dancing": {
+      "base": "The person from the input image dances energetically.",
+      "option_map": {
+        "Диско": "on a disco dance floor with colorful lights",
+        "Балет": "in an elegant ballet studio",
+        "Хип-хоп": "on an urban street with hip-hop vibe"
+      }
+    },
+    "running": {
+      "base": "The person from the input image runs forward dynamically.",
+      "option_map": {
+        "Городская улица": "through a busy city street",
+        "Лес": "along a forest trail",
+        "Стадион": "on a professional stadium track"
+      }
+    },
+    "singing": {
+      "base": "The person from the input image performs singing passionately.",
+      "option_map": {
+        "Рок-концерт": "on a rock concert stage with crowd",
+        "Опера": "in a grand opera house",
+        "Караоке": "in a cozy karaoke room"
+      }
+    },
+    "space": {
+      "base": "The person from the input image floats and moves in space.",
+      "option_map": {
+        "Невесомость": "in zero gravity inside a spacecraft",
+        "Лунная поверхность": "on the lunar surface in a spacesuit",
+        "Станция": "inside a futuristic space station"
+      }
+    }
+  }
+}

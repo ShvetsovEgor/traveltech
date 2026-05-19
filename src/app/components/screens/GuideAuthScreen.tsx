@@ -22,7 +22,7 @@ export function GuideAuthScreen() {
 
   if (!kioskId) {
     return (
-      <KioskScreen className="items-center justify-center">
+      <KioskScreen contentClassName="flex items-center justify-center">
         <Typography.Paragraph className="text-center text-lg max-w-md">
           Неверная ссылка. Нужен параметр{" "}
           <Typography.Code>?location=Popova</Typography.Code>
@@ -47,7 +47,7 @@ export function GuideAuthScreen() {
 
   if (success) {
     return (
-      <KioskScreen className="items-center justify-center">
+      <KioskScreen contentClassName="flex items-center justify-center">
         <Card className="max-w-md w-full p-8 text-center">
           <CheckCircle2 className="size-20 text-success mx-auto mb-6" />
           <Card.Title className="text-3xl mb-3">Киоск активирован</Card.Title>
@@ -61,7 +61,7 @@ export function GuideAuthScreen() {
   }
 
   return (
-    <KioskScreen className="items-center justify-center">
+    <KioskScreen contentClassName="flex items-center justify-center">
       <Card className="max-w-md w-full p-8 shadow-lg">
         <form onSubmit={handleSubmit}>
           <div className="flex items-center justify-center gap-2 text-accent mb-6">

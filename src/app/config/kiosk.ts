@@ -12,7 +12,6 @@ export type InteractiveItem = {
   description: string;
   icon: LucideIcon;
   path: string;
-  color: string;
   appType?: AppType;
 };
 
@@ -22,7 +21,6 @@ export const INTERACTIVE_ITEMS: InteractiveItem[] = [
     description: "Картина в стиле великих художников",
     icon: Palette,
     path: "/neural-artist",
-    color: "from-purple-500 to-pink-500",
     appType: "neuro_artist",
   },
   {
@@ -30,7 +28,6 @@ export const INTERACTIVE_ITEMS: InteractiveItem[] = [
     description: "Стилизация лица и мемы",
     icon: Box,
     path: "/neural-box",
-    color: "from-blue-500 to-cyan-500",
     appType: "neurobox",
   },
   {
@@ -38,14 +35,12 @@ export const INTERACTIVE_ITEMS: InteractiveItem[] = [
     description: "Фото превращается в видео",
     icon: Video,
     path: "/video-animation",
-    color: "from-green-500 to-emerald-500",
     appType: "video_magic",
   },
   {
     title: "Мини-игры",
-    description: "Змейка, тетрис и ровер",
+    description: "Миссия Мин-Тимера и лидарная симуляция",
     icon: Gamepad2,
     path: "/mini-games",
-    color: "from-orange-500 to-red-500",
   },
 ];

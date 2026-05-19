@@ -1,11 +1,11 @@
 import { useEffect, useState } from "react";
 import { useNavigate, useLocation } from "react-router";
 import { Palette, Sparkles, Brush } from "lucide-react";
-import { Button, ProgressCircle, Surface, Typography } from "@heroui/react";
+import { Button, ProgressCircle, Typography } from "@heroui/react";
 import { api } from "../../api/client";
 import { useKiosk } from "../../context/KioskContext";
 import { useTaskPolling } from "../../hooks/useTaskPolling";
-import { KioskScreen } from "../kiosk";
+import { KioskScreen, LoadingStepsList } from "../kiosk";
 
 const loadingSteps = [
   { icon: Palette, text: "Подбираем палитру..." },
@@ -84,25 +84,17 @@ export function NeuralArtistLoading() {
         aria-label="Генерация"
       />
 
-      <Typography.Heading level={2} className="text-4xl md:text-5xl mb-6">
+      <Typography.Heading
+        level={2}
+        className="mb-4 text-4xl font-bold text-foreground md:text-5xl"
+      >
         Создаём шедевр...
       </Typography.Heading>
-      <Typography.Paragraph className="text-xl text-muted mb-12">
+      <Typography.Paragraph className="mb-10 text-lg text-foreground/75 md:text-xl">
         Генерация может занять до нескольких минут
       </Typography.Paragraph>
 
-      <div className="space-y-4 w-full max-w-md">
-        {loadingSteps.map((step, index) => (
-          <Surface
-            key={index}
-            variant="secondary"
-            className="flex items-center gap-4 rounded-xl p-4"
-          >
-            <step.icon className="size-8 text-accent" />
-            <Typography.Paragraph className="text-lg">{step.text}</Typography.Paragraph>
-          </Surface>
-        ))}
-      </div>
+      <LoadingStepsList steps={loadingSteps} />
     </KioskScreen>
   );
 }

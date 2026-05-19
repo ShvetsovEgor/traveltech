@@ -1,0 +1,373 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Innopolis LiDAR Rover OS: Final Rotations</title>
+    <style>
+        body { margin: 0; overflow: hidden; background-color: #05050a; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;}
+        
+        /* Glassmorphism UI */
+        #ui-container {
+            position: absolute; top: 20px; left: 20px; 
+            padding: 20px; width: 280px;
+            background: rgba(20, 20, 30, 0.6); 
+            backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 16px;
+            color: white; pointer-events: none; z-index: 10;
+        }
+        h1 { margin: 0 0 10px 0; font-size: 1.3rem; font-weight: 600; letter-spacing: 0.5px; }
+        p { margin: 0 0 15px 0; font-size: 0.9rem; color: #a0a0ab; }
+        
+        /* Телеметрия */
+        #telemetry {
+            background: rgba(0, 0, 0, 0.3);
+            padding: 10px;
+            border-radius: 8px;
+            margin-bottom: 15px;
+            font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+            font-size: 0.85rem;
+            color: #4ade80;
+            font-variant-numeric: tabular-nums;
+            border: 1px solid rgba(74, 222, 128, 0.2);
+        }
+        .coord-label { color: #a0a0ab; margin-right: 5px; }
+        #skin-status { color: #ffaa00; font-weight: bold; }
+
+        .hint { margin-top: 15px; font-size: 0.8rem; color: #888; line-height: 1.6; }
+        
+        #lidar-toggle {
+            width: 100%; padding: 10px;
+            background: linear-gradient(135deg, #ffaa00, #8a2be2);
+            border: none; border-radius: 8px;
+            color: white; font-weight: bold; cursor: pointer;
+            pointer-events: auto; transition: opacity 0.2s;
+        }
+        #lidar-toggle:hover { opacity: 0.8; }
+        #lidar-toggle.off { background: rgba(255, 255, 255, 0.1); border: 1px solid rgba(255,255,255,0.2); }
+    </style>
+</head>
+<body>
+    <div id="ui-container">
+        <h1>Innopolis Rover OS</h1>
+        <p id="status">Загрузка протоколов...</p>
+        
+        <div id="telemetry">
+            <div><span class="coord-label">X:</span> <span id="pos-x">0.00</span></div>
+            <div><span class="coord-label">Y:</span> <span id="pos-y">0.00</span></div>
+            <div><span class="coord-label">Z:</span> <span id="pos-z">0.00</span></div>
+            <div style="margin-top: 5px; border-top: 1px solid rgba(255,255,255,0.1); padding-top: 5px;">
+                <span class="coord-label">Активный скин:</span> <span id="skin-status">Загрузка...</span>
+            </div>
+        </div>
+
+        <button id="lidar-toggle" class="off">Включить LiDAR (L)</button>
+
+        <div class="hint">
+            ⌨️ <b>Стрелки</b> — Езда (камера следует)<br>
+            🖱️ <b>Мышь (зажать)</b> — Свободный обзор вокруг<br>
+            ⌨️ <b>L</b> — Визор Лидара<br>
+            ⌨️ <b>1, 2</b> — Смена скина ровера
+        </div>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/GLTFLoader.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+
+    <script>
+        // --- 1. СЦЕНА И КАМЕРА ---
+        const scene = new THREE.Scene();
+        scene.background = new THREE.Color(0x87CEEB); 
+        scene.fog = new THREE.FogExp2(0x87CEEB, 0.005); 
+
+        const camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 2000);
+        const renderer = new THREE.WebGLRenderer({ antialias: true });
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        renderer.outputEncoding = THREE.sRGBEncoding;
+        document.body.appendChild(renderer.domElement);
+
+        const ambientLight = new THREE.AmbientLight(0xffffff, 0.7);
+        scene.add(ambientLight);
+        const dirLight = new THREE.DirectionalLight(0xffffff, 0.8);
+        dirLight.position.set(50, 100, 50);
+        scene.add(dirLight);
+
+        // --- 2. ГРУППЫ ОБЪЕКТОВ И ТОЧКА СПАВНА ---
+        const roverGroup = new THREE.Group();
+        // Точка спавна в Иннополисе
+        roverGroup.position.set(266, 10, 137); 
+        scene.add(roverGroup);
+
+        const cityNormalGroup = new THREE.Group();
+        const cityLidarGroup = new THREE.Group();
+        scene.add(cityNormalGroup);
+        scene.add(cityLidarGroup);
+        
+        cityLidarGroup.visible = false; 
+        let isLidarActive = false;
+
+        // --- 3. ИНТЕЛЛЕКТУАЛЬНОЕ УПРАВЛЕНИЕ КАМЕРОЙ ---
+        const controls = new THREE.OrbitControls(camera, renderer.domElement);
+        controls.enableDamping = true;
+        controls.dampingFactor = 0.05;
+        
+        let isUserControllingCamera = false;
+
+        controls.addEventListener('start', () => {
+            isUserControllingCamera = true;
+        });
+
+        // --- 4. ШЕЙДЕР ЛИДАРА ---
+        const lidarMaterial = new THREE.ShaderMaterial({
+            uniforms: {
+                uRoverPos: { value: new THREE.Vector3(0, 0, 0) },
+                uScanRadius: { value: 35.0 }, 
+                uColorNear: { value: new THREE.Color(0xffaa00) }, 
+                uColorFar: { value: new THREE.Color(0x8a2be2) }   
+            },
+            vertexShader: `
+                uniform vec3 uRoverPos;
+                varying float vDistance;
+                
+                void main() {
+                    vec4 worldPosition = modelMatrix * vec4(position, 1.0);
+                    vDistance = distance(worldPosition.xyz, uRoverPos);
+
+                    vec4 mvPosition = viewMatrix * worldPosition;
+                    gl_Position = projectionMatrix * mvPosition;
+                    
+                    float distanceSize = 180.0 / sqrt(-mvPosition.z);
+                    gl_PointSize = clamp(distanceSize, 2.0, 15.0); 
+                }
+            `,
+            fragmentShader: `
+                uniform float uScanRadius;
+                uniform vec3 uColorNear;
+                uniform vec3 uColorFar;
+                varying float vDistance;
+
+                void main() {
+                    if (vDistance > uScanRadius) {
+                        gl_FragColor = vec4(0.0, 0.0, 0.0, 0.0); 
+                    } else {
+                        float intensity = vDistance / uScanRadius;
+                        vec3 finalColor = mix(uColorNear, uColorFar, intensity);
+                        
+                        if (vDistance > uScanRadius - 2.0) {
+                            finalColor = mix(finalColor, vec3(1.0, 1.0, 1.0), 0.8); 
+                        }
+                        
+                        gl_FragColor = vec4(finalColor, 0.95);
+                    }
+                }
+            `,
+            transparent: true,
+            blending: THREE.AdditiveBlending, 
+            depthWrite: false
+        });
+
+        // --- 5. ЗАГРУЗКА ИННОПОЛИСА ---
+        const loader = new THREE.GLTFLoader();
+
+        loader.load('innopolis.glb', function (gltf) {
+            const city = gltf.scene;
+            city.scale.set(1, 1, 1);
+            cityNormalGroup.add(city);
+
+            const lidarCity = city.clone();
+            const meshesToRemove = [];
+
+            lidarCity.traverse((child) => {
+                if (child.isMesh) {
+                    const points = new THREE.Points(child.geometry, lidarMaterial);
+                    points.position.copy(child.position);
+                    points.rotation.copy(child.rotation);
+                    points.scale.copy(child.scale);
+                    
+                    child.parent.add(points);
+                    meshesToRemove.push(child); 
+                }
+            });
+            
+            meshesToRemove.forEach(m => m.parent.remove(m));
+            cityLidarGroup.add(lidarCity);
+        });
+
+        // --- 6. МЕНЕДЖЕР СКИНОВ С ИСПРАВЛЕННЫМ НАПРАВЛЕНИЕМ ---
+        let currentSkinName = ''; 
+        let isRoverLoaded = false;
+        let currentRoverMesh = null;    
+
+        function switchSkin(skinFile, skinName) {
+            if (currentSkinName === skinName) return;
+
+            document.getElementById('status').innerHTML = `⏳ Модификация: ${skinName}...`;
+            document.getElementById('status').style.color = '#ffaa00';
+
+            loader.load(
+                skinFile, 
+                function (gltf) {
+                    if (currentRoverMesh) {
+                        roverGroup.remove(currentRoverMesh);
+                    }
+
+                    currentRoverMesh = gltf.scene;
+                    currentRoverMesh.scale.set(1, 1, 1);
+                    
+                    // --- КОРРЕКЦИЯ ПОВОРОТА МОДЕЛЕЙ ---
+                    if (skinFile === 'rover.glb') {
+                        // Базовая модель косила влево. Меняем знак на минус (-Math.PI / 2),
+                        // чтобы развернуть её задом к камере, передом к дороге.
+                        currentRoverMesh.rotation.y = -Math.PI / 2;
+                    
+                    } else if (skinFile === 'rover_1.glb' || skinFile === 'rover_2.glb') {
+                        // Кастомные модели смотрят лицом на нас, разворачиваем на 180 градусов (Math.PI)
+                        currentRoverMesh.rotation.y = Math.PI;
+                    
+                    } else {
+                        currentRoverMesh.rotation.y = 0; 
+                    }
+                    // -------------------------------------------------------------
+
+                    roverGroup.add(currentRoverMesh);
+                    
+                    currentSkinName = skinName;
+                    isRoverLoaded = true;
+
+                    document.getElementById('skin-status').innerText = skinName;
+                    document.getElementById('status').innerHTML = '✅ Система навигации активна';
+                    document.getElementById('status').style.color = '#4ade80';
+                },
+                undefined,
+                function (error) {
+                    console.error(`Ошибка загрузки скина ${skinFile}:`, error);
+                    document.getElementById('status').innerHTML = `❌ Ошибка доступа к ${skinFile}!`;
+                    document.getElementById('status').style.color = '#ff6b6b';
+                }
+            );
+        }
+
+        // Запуск базового скина
+        switchSkin('rover.glb', 'По умолчанию');
+
+        // --- 7. УПРАВЛЕНИЕ И КЛАВИАТУРА ---
+        const keys = { ArrowUp: false, ArrowDown: false, ArrowLeft: false, ArrowRight: false };
+        
+        window.addEventListener('keydown', (e) => { 
+            if (keys.hasOwnProperty(e.key)) {
+                keys[e.key] = true;
+                isUserControllingCamera = false; // Возврат камеры при езде
+            } 
+            
+            if (e.key.toLowerCase() === 'l') toggleLidar();
+            if (e.key === '1') switchSkin('rover_1.glb', 'A-Skin (Neon)');
+            if (e.key === '2') switchSkin('rover_2.glb', 'B-Skin (Cargo)');
+        });
+        
+        window.addEventListener('keyup', (e) => { 
+            if (keys.hasOwnProperty(e.key)) keys[e.key] = false; 
+        });
+
+        const toggleBtn = document.getElementById('lidar-toggle');
+        toggleBtn.addEventListener('click', toggleLidar);
+
+        function toggleLidar() {
+            isLidarActive = !isLidarActive;
+            cityNormalGroup.visible = !isLidarActive;
+            cityLidarGroup.visible = isLidarActive;
+            
+            if (isLidarActive) {
+                scene.background = new THREE.Color(0x05050a);
+                scene.fog = new THREE.FogExp2(0x05050a, 0.03); 
+                toggleBtn.className = '';
+                toggleBtn.innerText = 'Выключить LiDAR (L)';
+                ambientLight.intensity = 0.1;
+            } else {
+                scene.background = new THREE.Color(0x87CEEB);
+                scene.fog = new THREE.FogExp2(0x87CEEB, 0.005);
+                toggleBtn.className = 'off';
+                toggleBtn.innerText = 'Включить LiDAR (L)';
+                ambientLight.intensity = 0.7;
+            }
+        }
+
+        window.addEventListener('resize', () => {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        });
+
+        const posXEl = document.getElementById('pos-x');
+        const posYEl = document.getElementById('pos-y');
+        const posZEl = document.getElementById('pos-z');
+
+        // --- 8. ФИЗИКА И ЦИКЛ ОБНОВЛЕНИЯ КАМЕРЫ ---
+        const moveSpeed = 0.2; 
+        const turnSpeed = 0.04; 
+        
+        const cameraOffset = new THREE.Vector3(0, 1.2, 4.0); 
+        const currentCameraPosition = new THREE.Vector3();
+        const currentLookAt = new THREE.Vector3();
+        let isCameraInitialized = false;
+
+        const globalRoverPos = new THREE.Vector3();
+
+        function animate() {
+            requestAnimationFrame(animate);
+
+            if (isRoverLoaded) {
+                // Перемещение
+                if (keys.ArrowLeft)  roverGroup.rotation.y += turnSpeed;
+                if (keys.ArrowRight) roverGroup.rotation.y -= turnSpeed;
+                if (keys.ArrowUp)   roverGroup.translateZ(-moveSpeed);
+                if (keys.ArrowDown) roverGroup.translateZ(moveSpeed);
+
+                // Вывод координат
+                posXEl.innerText = roverGroup.position.x.toFixed(2);
+                posYEl.innerText = roverGroup.position.y.toFixed(2);
+                posZEl.innerText = roverGroup.position.z.toFixed(2);
+
+                // Координаты для шейдера лидара
+                roverGroup.getWorldPosition(globalRoverPos);
+                lidarMaterial.uniforms.uRoverPos.value.copy(globalRoverPos);
+
+                // Расчет идеального положения камеры за ровером
+                const idealOffset = cameraOffset.clone();
+                idealOffset.applyQuaternion(roverGroup.quaternion);
+                const idealPosition = roverGroup.position.clone().add(idealOffset);
+
+                const idealLookAt = roverGroup.position.clone();
+                idealLookAt.y += 0.6; 
+
+                // Режимы камеры (свободный обзор / автовозврат)
+                if (isUserControllingCamera) {
+                    controls.target.copy(roverGroup.position).add(new THREE.Vector3(0, 0.6, 0));
+                    controls.update();
+                    
+                    currentCameraPosition.copy(camera.position);
+                    currentLookAt.copy(controls.target);
+                } else {
+                    if (!isCameraInitialized) {
+                        currentCameraPosition.copy(idealPosition);
+                        currentLookAt.copy(idealLookAt);
+                        camera.position.copy(currentCameraPosition);
+                        camera.lookAt(currentLookAt);
+                        isCameraInitialized = true;
+                    } else {
+                        currentCameraPosition.lerp(idealPosition, 0.08);
+                        currentLookAt.lerp(idealLookAt, 0.12);
+                        
+                        camera.position.copy(currentCameraPosition);
+                        camera.lookAt(currentLookAt);
+                    }
+                }
+            }
+
+            renderer.render(scene, camera);
+        }
+
+        animate();
+    </script>
+</body>
+</html>

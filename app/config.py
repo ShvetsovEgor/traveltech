@@ -21,6 +21,8 @@ class Settings(BaseSettings):
         default_factory=lambda: [
             "http://localhost:5173",
             "http://127.0.0.1:5173",
+            "https://missioninnopolis.ru",
+            "https://www.missioninnopolis.ru",
         ]
     )
 
@@ -49,6 +51,9 @@ class Settings(BaseSettings):
     public_base_url: str = "http://127.0.0.1:8000"
 
     log_level: Literal["DEBUG", "INFO", "WARNING", "ERROR"] = "INFO"
+
+    # AI prompts catalog (JSON). Keys must match UI option labels in option_map.
+    prompts_file: str = "prompts/prompts.json"
 
 
 @lru_cache

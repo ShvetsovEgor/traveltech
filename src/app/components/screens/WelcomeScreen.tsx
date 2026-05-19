@@ -1,12 +1,7 @@
-import { useEffect, useMemo, useState } from "react";
+import { useMemo } from "react";
 import { useNavigate, useSearchParams } from "react-router";
 import { MapPin, Sparkles } from "lucide-react";
-import {
-  Alert,
-  Chip,
-  Typography,
-  cn,
-} from "@heroui/react";
+import { Chip, Typography } from "@heroui/react";
 import { useKiosk } from "../../context/KioskContext";
 import {
   INTERACTIVE_ITEMS,
@@ -26,14 +21,6 @@ export function WelcomeScreen() {
     [searchParams]
   );
   const effectiveKioskId = locationFromUrl ?? kioskId;
-
-  const [justActivated, setJustActivated] = useState(true);
-
-  useEffect(() => {
-    setJustActivated(true);
-    const t = window.setTimeout(() => setJustActivated(false), 8000);
-    return () => clearTimeout(t);
-  }, []);
 
   const handleInteractive = async (item: InteractiveItem) => {
     if (item.appType) {
@@ -94,25 +81,10 @@ export function WelcomeScreen() {
           </Chip.Label>
         </Chip>
 
-        <Typography.Paragraph className="mt-1 text-sm text-white/90 sm:text-base">
-          {justActivated
-            ? "Киоск активирован — выберите интерактив"
-            : "Выберите интерактив"}
+        <Typography.Paragraph className="mt-1 text-sm text-white/85 sm:text-base">
+          Выберите интерактив
         </Typography.Paragraph>
       </header>
-
-      {justActivated && (
-        <Alert
-          status="success"
-          className="shrink-0 border border-success/40 bg-white/95 py-2"
-        >
-          <Alert.Content>
-            <Alert.Title className="text-sm text-foreground sm:text-base">
-              Киоск активен — можно начинать работу
-            </Alert.Title>
-          </Alert.Content>
-        </Alert>
-      )}
 
       <div className="flex min-h-0 flex-1 flex-col justify-start gap-2 overflow-visible sm:gap-2.5">
         {INTERACTIVE_ITEMS.map((item, index) => (
@@ -123,7 +95,6 @@ export function WelcomeScreen() {
             title={item.title}
             description={item.description}
             icon={item.icon}
-            gradient={item.color}
             onPress={() => handleInteractive(item)}
           />
         ))}
