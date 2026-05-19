@@ -216,7 +216,7 @@ class TaskManager:
             if await self.redis.is_cancelled(task_id):
                 return
             loop = asyncio.get_running_loop()
-            success = await loop.run_in_executor(
+            success, gen_error = await loop.run_in_executor(
                 _executor,
                 _call_generate_video_from_image,
                 str(input_path),
@@ -235,7 +235,7 @@ class TaskManager:
                         db,
                         task_id,
                         TaskStatus.FAILED,
-                        error_message="Video generation failed",
+                        error_message=gen_error or "Генерация видео не удалась",
                     )
         except Exception as exc:
             logger.exception("Video task %s failed", task_id)
@@ -265,7 +265,7 @@ def _call_generate_video_from_image(
     input_image_path: str,
     prompt: str,
     output_video_path: str,
-) -> bool:
+) -> tuple[bool, str | None]:
     from ai_services import generate_video_from_image
 
     return generate_video_from_image(

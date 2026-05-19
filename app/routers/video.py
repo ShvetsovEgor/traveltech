@@ -1,9 +1,11 @@
 import json
+import logging
 
 from fastapi import APIRouter, File, Form, HTTPException, UploadFile, status
 
+from app.core.image_validation import validate_portrait_image
 from app.core.prompt_engine import PromptEngine
-from app.core.storage import save_upload
+from app.core.storage import cleanup_upload_file, save_upload
 from app.database import get_session_factory
 from app.dependencies import DbSession, SecurityDep
 from app.models.enums import AppType
@@ -12,6 +14,7 @@ from app.services.audit import write_audit
 from app.services.task_manager import TaskManager
 
 router = APIRouter()
+logger = logging.getLogger(__name__)
 
 
 @router.post("/generate", response_model=GenerateTaskResponse)
@@ -39,6 +42,21 @@ async def generate_video(
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(exc)) from exc
 
     input_path = await save_upload(interaction_token, photo, suffix="_photo")
+    try:
+        validate_portrait_image(input_path)
+    except ValueError as exc:
+        cleanup_upload_file(input_path)
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=str(exc),
+        ) from exc
+
+    logger.info(
+        "Video photo saved: %s (%d bytes)",
+        input_path,
+        input_path.stat().st_size,
+    )
+
     task_manager = TaskManager(security.redis)
     task_id = await task_manager.create_task(
         db,

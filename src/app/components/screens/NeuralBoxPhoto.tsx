@@ -11,7 +11,12 @@ import {
 import { api, resolveMediaUrl } from "../../api/client";
 import { useKiosk } from "../../context/KioskContext";
 import { useTaskPolling } from "../../hooks/useTaskPolling";
-import { captureVideoFrameAsDataUrl, dataUrlToFile } from "../../utils/media";
+import {
+  captureVideoFrameAsDataUrl,
+  captureVideoFrameAsFile,
+  isVideoFrameReady,
+  validatePortraitFile,
+} from "../../utils/media";
 import { KioskBody, KioskHeader, KioskScreen, MediaWithQrOverlay } from "../kiosk";
 
 export function NeuralBoxPhoto() {
@@ -29,6 +34,8 @@ export function NeuralBoxPhoto() {
   const [error, setError] = useState<string | null>(null);
   const [taskId, setTaskId] = useState<string | null>(null);
   const [cameraError, setCameraError] = useState(false);
+  const [cameraReady, setCameraReady] = useState(false);
+  const [captureError, setCaptureError] = useState<string | null>(null);
   const videoRef = useRef<HTMLVideoElement>(null);
   const photoFileRef = useRef<File | null>(null);
 
@@ -38,27 +45,45 @@ export function NeuralBoxPhoto() {
   }, []);
 
   const startCamera = async () => {
+    setCameraReady(false);
+    setCaptureError(null);
     try {
-      const stream = await navigator.mediaDevices.getUserMedia({ video: true });
-      if (videoRef.current) {
-        videoRef.current.srcObject = stream;
-        setCameraError(false);
+      const stream = await navigator.mediaDevices.getUserMedia({
+        video: { facingMode: "user", width: { ideal: 1280 }, height: { ideal: 720 } },
+      });
+      const video = videoRef.current;
+      if (!video) {
+        stream.getTracks().forEach((t) => t.stop());
+        return;
       }
+      video.srcObject = stream;
+      video.onloadedmetadata = () => {
+        setCameraReady(isVideoFrameReady(video));
+      };
+      setCameraError(false);
     } catch {
       setCameraError(true);
+      setCameraReady(false);
     }
   };
 
   const stopCamera = () => {
-    if (videoRef.current?.srcObject) {
-      (videoRef.current.srcObject as MediaStream)
-        .getTracks()
-        .forEach((t) => t.stop());
+    const video = videoRef.current;
+    if (video?.srcObject) {
+      (video.srcObject as MediaStream).getTracks().forEach((t) => t.stop());
+      video.srcObject = null;
     }
   };
 
   const startGeneration = async (file: File) => {
     if (!interactionToken || !style) return;
+
+    const photoError = await validatePortraitFile(file);
+    if (photoError) {
+      setError(photoError);
+      return;
+    }
+
     setIsGenerating(true);
     setError(null);
     try {
@@ -97,31 +122,51 @@ export function NeuralBoxPhoto() {
 
     const capture = async () => {
       setCountdown(null);
-      stopCamera();
-      let file: File | null = null;
-      if (videoRef.current) {
-        const dataUrl = captureVideoFrameAsDataUrl(videoRef.current);
-        if (dataUrl) {
-          setPreviewUrl(dataUrl);
-          file = await dataUrlToFile(dataUrl, "photo.jpg");
-        }
-      }
-      if (!file) {
-        file = await dataUrlToFile(
-          "data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAAD/2wBDAAgGBgcGBQgHBwcJCQgKDBQNDAsLDBkSEw8UHRofHh0aHBwgJC4nICIsIxwcKDcpLDAxNDQ0Hyc5PTgyPC4zNDL/2wBDAQkJCQwLDBgNDRgyIRwhMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjL/wAARCAABAAEDASIAAhEBAxEB/8QAFQABAQAAAAAAAAAAAAAAAAAAAAn/xAAUEAEAAAAAAAAAAAAAAAAAAAAA/8QAFQEBAQAAAAAAAAAAAAAAAAAAAAX/xAAUEQEAAAAAAAAAAAAAAAAAAAAA/9oADAMBAAIRAxEAPwCwAA8A/9k=",
-          "photo.jpg"
+      setCaptureError(null);
+
+      const video = videoRef.current;
+      if (!video || cameraError || !isVideoFrameReady(video)) {
+        setCaptureError(
+          "Камера не готова. Разрешите доступ к камере и дождитесь изображения."
         );
-        setPreviewUrl(URL.createObjectURL(file));
+        return;
       }
+
+      const dataUrl = captureVideoFrameAsDataUrl(video);
+      const file = await captureVideoFrameAsFile(video);
+      stopCamera();
+
+      if (!dataUrl || !file) {
+        setCaptureError("Не удалось снять кадр. Попробуйте ещё раз.");
+        await startCamera();
+        return;
+      }
+
+      const validationError = await validatePortraitFile(file);
+      if (validationError) {
+        setCaptureError(validationError);
+        await startCamera();
+        return;
+      }
+
+      setPreviewUrl(dataUrl);
       photoFileRef.current = file;
       setPhotoTaken(true);
     };
-    capture();
-  }, [countdown]);
+    void capture();
+  }, [countdown, cameraError]);
 
   const handleConfirm = async () => {
-    if (!photoFileRef.current) return;
-    await startGeneration(photoFileRef.current);
+    const file = photoFileRef.current;
+    if (!file) return;
+
+    const photoError = await validatePortraitFile(file);
+    if (photoError) {
+      setCaptureError(photoError);
+      return;
+    }
+
+    await startGeneration(file);
   };
 
   const handleRetake = () => {
@@ -131,9 +176,10 @@ export function NeuralBoxPhoto() {
     setResultUrl(null);
     setTaskId(null);
     setError(null);
+    setCaptureError(null);
     setIsGenerating(false);
     photoFileRef.current = null;
-    startCamera();
+    void startCamera();
   };
 
   const displayUrl = resultUrl ? resolveMediaUrl(resultUrl) : previewUrl;
@@ -148,10 +194,10 @@ export function NeuralBoxPhoto() {
       />
 
       <KioskBody>
-      {error && (
+      {(error || captureError) && (
         <Alert status="danger" className="mb-3 max-w-2xl">
           <Alert.Content>
-            <Alert.Description>{error}</Alert.Description>
+            <Alert.Description>{error ?? captureError}</Alert.Description>
           </Alert.Content>
         </Alert>
       )}
@@ -171,8 +217,8 @@ export function NeuralBoxPhoto() {
           <Card className="relative aspect-[4/3] w-full max-w-2xl max-h-[min(52vh,420px)] overflow-hidden p-0 bg-black">
             {!photoTaken ? (
               cameraError ? (
-                <div className="w-full h-full flex items-center justify-center text-muted p-8 text-center">
-                  Камера недоступна — будет использован тестовый кадр
+                <div className="flex h-full w-full items-center justify-center p-8 text-center text-muted">
+                  Камера недоступна. Без фото генерация не запускается.
                 </div>
               ) : (
                 <video
@@ -199,9 +245,14 @@ export function NeuralBoxPhoto() {
           </Card>
 
           {!photoTaken && !isGenerating ? (
-            <Button variant="primary" size="lg" onPress={() => setCountdown(3)}>
+            <Button
+              variant="primary"
+              size="lg"
+              isDisabled={cameraError || !cameraReady || countdown !== null}
+              onPress={() => setCountdown(3)}
+            >
               <Camera className="size-6" />
-              Сделать фото
+              {cameraReady ? "Сделать фото" : "Камера загружается…"}
             </Button>
           ) : isGenerating ? (
             <div className="text-center">

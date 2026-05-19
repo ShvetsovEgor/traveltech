@@ -1,12 +1,14 @@
 import { useState, useRef, useEffect } from "react";
 import { useNavigate } from "react-router";
 import { Camera, RotateCcw, Video } from "lucide-react";
-import { Button, Card, Typography } from "@heroui/react";
+import { Alert, Button, Card, Typography } from "@heroui/react";
 import {
   captureVideoFrameAsDataUrl,
   captureVideoFrameAsFile,
-  dataUrlToFile,
+  isVideoFrameReady,
+  validatePortraitFile,
 } from "../../utils/media";
+import { saveVideoPhotoDataUrl, clearVideoPhotoDataUrl } from "../../utils/videoPhotoStore";
 import { KioskBody, KioskHeader, KioskScreen } from "../kiosk";
 
 export function VideoAnimation() {
@@ -15,6 +17,8 @@ export function VideoAnimation() {
   const [photoTaken, setPhotoTaken] = useState(false);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [cameraError, setCameraError] = useState(false);
+  const [cameraReady, setCameraReady] = useState(false);
+  const [captureError, setCaptureError] = useState<string | null>(null);
   const videoRef = useRef<HTMLVideoElement>(null);
   const photoFileRef = useRef<File | null>(null);
 
@@ -24,22 +28,33 @@ export function VideoAnimation() {
   }, []);
 
   const startCamera = async () => {
+    setCameraReady(false);
+    setCaptureError(null);
     try {
-      const stream = await navigator.mediaDevices.getUserMedia({ video: true });
-      if (videoRef.current) {
-        videoRef.current.srcObject = stream;
-        setCameraError(false);
+      const stream = await navigator.mediaDevices.getUserMedia({
+        video: { facingMode: "user", width: { ideal: 1280 }, height: { ideal: 720 } },
+      });
+      const video = videoRef.current;
+      if (!video) {
+        stream.getTracks().forEach((t) => t.stop());
+        return;
       }
+      video.srcObject = stream;
+      video.onloadedmetadata = () => {
+        setCameraReady(isVideoFrameReady(video));
+      };
+      setCameraError(false);
     } catch {
       setCameraError(true);
+      setCameraReady(false);
     }
   };
 
   const stopCamera = () => {
-    if (videoRef.current?.srcObject) {
-      (videoRef.current.srcObject as MediaStream)
-        .getTracks()
-        .forEach((t) => t.stop());
+    const video = videoRef.current;
+    if (video?.srcObject) {
+      (video.srcObject as MediaStream).getTracks().forEach((t) => t.stop());
+      video.srcObject = null;
     }
   };
 
@@ -52,39 +67,66 @@ export function VideoAnimation() {
 
     const capture = async () => {
       setCountdown(null);
-      stopCamera();
-      let photoFile: File | null = null;
-      if (videoRef.current) {
-        const dataUrl = captureVideoFrameAsDataUrl(videoRef.current);
-        if (dataUrl) {
-          setPreviewUrl(dataUrl);
-          photoFile = await captureVideoFrameAsFile(videoRef.current);
-        }
-      }
-      if (!photoFile) {
-        photoFile = await dataUrlToFile(
-          "data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAAD/2wBDAAgGBgcGBQgHBwcJCQgKDBQNDAsLDBkSEw8UHRofHh0aHBwgJC4nICIsIxwcKDcpLDAxNDQ0Hyc5PTgyPC4zNDL/2wBDAQkJCQwLDBgNDRgyIRwhMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjL/wAARCAABAAEDASIAAhEBAxEB/8QAFQABAQAAAAAAAAAAAAAAAAAAAAn/xAAUEAEAAAAAAAAAAAAAAAAAAAAA/8QAFQEBAQAAAAAAAAAAAAAAAAAAAAX/xAAUEQEAAAAAAAAAAAAAAAAAAAAA/9oADAMBAAIRAxEAPwCwAA8A/9k=",
-          "photo.jpg"
+      setCaptureError(null);
+
+      const video = videoRef.current;
+      if (!video || cameraError || !isVideoFrameReady(video)) {
+        setCaptureError(
+          "Камера не готова. Разрешите доступ к камере и дождитесь изображения в кадре."
         );
-        setPreviewUrl(URL.createObjectURL(photoFile));
+        return;
       }
+
+      const dataUrl = captureVideoFrameAsDataUrl(video);
+      const photoFile = await captureVideoFrameAsFile(video);
+      stopCamera();
+
+      if (!dataUrl || !photoFile) {
+        setCaptureError("Не удалось снять кадр. Попробуйте ещё раз.");
+        await startCamera();
+        return;
+      }
+
+      const validationError = await validatePortraitFile(photoFile);
+      if (validationError) {
+        setCaptureError(validationError);
+        await startCamera();
+        return;
+      }
+
+      setPreviewUrl(dataUrl);
       photoFileRef.current = photoFile;
       setPhotoTaken(true);
     };
-    capture();
-  }, [countdown]);
+
+    void capture();
+  }, [countdown, cameraError]);
 
   const handleRetake = () => {
     setPhotoTaken(false);
     setPreviewUrl(null);
+    setCaptureError(null);
     photoFileRef.current = null;
-    startCamera();
+    clearVideoPhotoDataUrl();
+    void startCamera();
   };
 
-  const handleConfirm = () => {
-    if (!photoFileRef.current) return;
+  const handleConfirm = async () => {
+    const file = photoFileRef.current;
+    if (!file) return;
+
+    const validationError = await validatePortraitFile(file);
+    if (validationError) {
+      setCaptureError(validationError);
+      return;
+    }
+
+    if (previewUrl) {
+      saveVideoPhotoDataUrl(previewUrl);
+    }
+
     navigate("/video-animation/scenario", {
-      state: { photoFile: photoFileRef.current, previewUrl },
+      state: { photoFile: file, previewUrl },
     });
   };
 
@@ -101,59 +143,74 @@ export function VideoAnimation() {
         <div className="flex flex-col items-center gap-4">
           <Typography.Paragraph className="text-center text-sm text-muted-foreground">
             {photoTaken
-              ? "Проверьте фото и нажмите «Готово»"
-              : "Сделайте фото, и мы оживим его в видео"}
+              ? "Проверьте, что на фото ваше лицо, и нажмите «Готово»"
+              : "Сделайте фото — мы оживим именно его в видео"}
           </Typography.Paragraph>
-        <Card className="relative aspect-[4/3] w-full max-w-2xl max-h-[min(52vh,420px)] overflow-hidden p-0 bg-black">
-          {!photoTaken ? (
-            cameraError ? (
-              <div className="w-full h-full flex items-center justify-center text-muted p-8 text-center">
-                Камера недоступна — будет использован тестовый кадр
-              </div>
-            ) : (
-              <video
-                ref={videoRef}
-                autoPlay
-                playsInline
-                muted
-                className="w-full h-full object-cover"
-              />
-            )
-          ) : (
-            previewUrl && (
-              <img
-                src={previewUrl}
-                alt="Предпросмотр"
-                className="w-full h-full object-cover"
-              />
-            )
+
+          {captureError && (
+            <Alert status="danger" className="max-w-2xl">
+              <Alert.Content>
+                <Alert.Description>{captureError}</Alert.Description>
+              </Alert.Content>
+            </Alert>
           )}
 
-          {countdown !== null && countdown > 0 && (
-            <div className="absolute inset-0 bg-black/50 flex items-center justify-center">
-              <Typography.Heading level={1} className="text-9xl text-white">
-                {countdown}
-              </Typography.Heading>
+          <Card className="relative aspect-[4/3] w-full max-w-2xl max-h-[min(52vh,420px)] overflow-hidden p-0 bg-black">
+            {!photoTaken ? (
+              cameraError ? (
+                <div className="flex h-full w-full items-center justify-center p-8 text-center text-muted">
+                  Камера недоступна. Разрешите доступ в настройках браузера и
+                  обновите страницу — без фото генерация не запускается.
+                </div>
+              ) : (
+                <video
+                  ref={videoRef}
+                  autoPlay
+                  playsInline
+                  muted
+                  className="h-full w-full object-cover"
+                />
+              )
+            ) : (
+              previewUrl && (
+                <img
+                  src={previewUrl}
+                  alt="Предпросмотр"
+                  className="h-full w-full object-cover"
+                />
+              )
+            )}
+
+            {countdown !== null && countdown > 0 && (
+              <div className="absolute inset-0 flex items-center justify-center bg-black/50">
+                <Typography.Heading level={1} className="text-9xl text-white">
+                  {countdown}
+                </Typography.Heading>
+              </div>
+            )}
+          </Card>
+
+          {!photoTaken ? (
+            <Button
+              variant="primary"
+              size="lg"
+              isDisabled={cameraError || !cameraReady || countdown !== null}
+              onPress={() => setCountdown(3)}
+            >
+              <Camera className="size-6" />
+              {cameraReady ? "Сделать фото" : "Камера загружается…"}
+            </Button>
+          ) : (
+            <div className="flex flex-wrap items-center justify-center gap-4">
+              <Button variant="secondary" onPress={handleRetake}>
+                <RotateCcw className="size-5" />
+                Переснять
+              </Button>
+              <Button variant="primary" size="lg" onPress={() => void handleConfirm()}>
+                Готово
+              </Button>
             </div>
           )}
-        </Card>
-
-        {!photoTaken ? (
-          <Button variant="primary" size="lg" onPress={() => setCountdown(3)}>
-            <Camera className="size-6" />
-            Сделать фото
-          </Button>
-        ) : (
-          <div className="flex flex-wrap items-center justify-center gap-4">
-            <Button variant="secondary" onPress={handleRetake}>
-              <RotateCcw className="size-5" />
-              Переснять
-            </Button>
-            <Button variant="primary" size="lg" onPress={handleConfirm}>
-              Готово
-            </Button>
-          </div>
-        )}
         </div>
       </KioskBody>
     </KioskScreen>

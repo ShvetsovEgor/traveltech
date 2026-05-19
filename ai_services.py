@@ -1,5 +1,8 @@
+import io
 import ssl
 import time
+from pathlib import Path
+
 import httpx
 from PIL import Image
 from google import genai
@@ -22,6 +25,31 @@ _NETWORK_ERRORS = (
     ConnectionError,
     TimeoutError,
 )
+
+
+_MIME_BY_SUFFIX = {
+    ".jpg": "image/jpeg",
+    ".jpeg": "image/jpeg",
+    ".png": "image/png",
+    ".webp": "image/webp",
+}
+
+
+def _prepare_video_image(input_image_path: str) -> tuple[bytes, str]:
+    """
+    Байты и MIME для Veo image-to-video.
+    JPEG/PNG с диска — как есть; остальное нормализуем в JPEG через PIL.
+    """
+    path = Path(input_image_path)
+    suffix = path.suffix.lower()
+    if suffix in _MIME_BY_SUFFIX:
+        with open(path, "rb") as f:
+            return f.read(), _MIME_BY_SUFFIX[suffix]
+
+    img = Image.open(path).convert("RGB")
+    buf = io.BytesIO()
+    img.save(buf, format="JPEG", quality=92)
+    return buf.getvalue(), "image/jpeg"
 
 
 def _is_retriable_error(exc: BaseException) -> bool:
@@ -84,13 +112,36 @@ def generate_stylized_image(
     return False
 
 
+def _save_generated_video_file(generated_video: object, output_video_path: str) -> None:
+    """Сохраняет mp4 из ответа Veo (разные версии SDK)."""
+    video_file = getattr(generated_video, "video", generated_video)
+    client.files.download(file=video_file)
+
+    video_bytes = getattr(video_file, "video_bytes", None)
+    if video_bytes:
+        Path(output_video_path).write_bytes(video_bytes)
+        return
+
+    if hasattr(video_file, "save"):
+        video_file.save(output_video_path)
+        if Path(output_video_path).is_file() and Path(output_video_path).stat().st_size > 0:
+            return
+
+    downloaded = client.files.download(file=video_file)
+    if isinstance(downloaded, (bytes, bytearray)) and downloaded:
+        Path(output_video_path).write_bytes(downloaded)
+        return
+
+    raise RuntimeError("API вернул пустое видео")
+
+
 def generate_video_from_image(
     input_image_path: str, 
     prompt: str, 
     output_video_path: str = "generated_video.mp4",
     model_name: str = "veo-3.1-lite-generate-preview",
     max_start_retries: int = 5
-) -> bool:
+) -> tuple[bool, str | None]:
     """
     Оживляет фотографию на основе промпта.
     Включает защиту от обрывов сети.
@@ -98,14 +149,24 @@ def generate_video_from_image(
     """
     print(f"🎬 Запуск генерации видео (Оживление видео)...")
     
-    try:
-        with open(input_image_path, "rb") as f:
-            img_bytes = f.read()
-    except FileNotFoundError:
-        print(f"❌ Файл {input_image_path} не найден.")
-        return False
+    from app.core.image_validation import validate_portrait_image
 
-    print("📸 Изображение прочитано. Отправка данных на сервер...")
+    try:
+        validate_portrait_image(Path(input_image_path))
+        img_bytes, mime_type = _prepare_video_image(input_image_path)
+    except ValueError as e:
+        print(f"❌ {e}")
+        return False, str(e)
+    except FileNotFoundError:
+        msg = f"Файл {input_image_path} не найден."
+        print(f"❌ {msg}")
+        return False, msg
+    except Exception as e:
+        msg = f"Не удалось прочитать {input_image_path}: {e}"
+        print(f"❌ {msg}")
+        return False, msg
+
+    print(f"📸 Изображение прочитано ({mime_type}). Отправка данных на сервер...")
 
     operation = None
 
@@ -117,7 +178,7 @@ def generate_video_from_image(
                 prompt=prompt,
                 image=types.Image(
                     image_bytes=img_bytes,
-                    mime_type="image/jpeg"
+                    mime_type=mime_type,
                 ),
                 config={
                     "aspect_ratio": "16:9",
@@ -137,11 +198,12 @@ def generate_video_from_image(
                 time.sleep(5 * (attempt + 1))
                 continue
             print(f"❌ Критическая ошибка при запуске: {e}")
-            return False
+            return False, f"Ошибка запуска Veo: {e}"
 
     if not operation:
-        print("❌ Не удалось отправить запрос после нескольких попыток. Проверьте сеть.")
-        return False
+        msg = "Не удалось отправить запрос в Veo. Проверьте сеть и GEMINI_API_KEY."
+        print(f"❌ {msg}")
+        return False, msg
 
     # 2. ЗАЩИТА ЭТАПА ОЖИДАНИЯ
     while not operation.done:
@@ -160,15 +222,12 @@ def generate_video_from_image(
 
     # 3. ЗАЩИТА ЭТАПА СКАЧИВАНИЯ
     try:
-        video = operation.response.generated_videos[0]
-        # Скачиваем файл (client.files.download возвращает байты, которые нужно сохранить)
-        client.files.download(file=video.video)
-        # Обрати внимание: в твоем исходнике было video.video.save(), 
-        # но в новом SDK метод сохранения может отличаться, проверяй по своей версии.
-        # Если API SDK сам умеет сохранять через .save() - оставляем:
-        video.video.save(output_video_path)
+        if not operation.response or not operation.response.generated_videos:
+            return False, "Veo не вернул видео в ответе"
+        generated = operation.response.generated_videos[0]
+        _save_generated_video_file(generated, output_video_path)
         print(f"✅ Готово! Видео сохранено как {output_video_path}")
-        return True
+        return True, None
     except Exception as e:
         print(f"❌ Ошибка при скачивании или сохранении: {e}")
-        return False
+        return False, f"Ошибка сохранения видео: {e}"

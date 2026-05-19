@@ -72,6 +72,7 @@ class PromptEngine:
             mapped = [option_map[o] for o in options if o in option_map]
             if mapped:
                 parts.append(", ".join(mapped))
+        parts.append(technical["portrait"])
         parts.append(technical["video"])
         return " ".join(parts)
 

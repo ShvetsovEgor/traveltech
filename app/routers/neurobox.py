@@ -2,8 +2,9 @@ import json
 
 from fastapi import APIRouter, File, Form, HTTPException, UploadFile, status
 
+from app.core.image_validation import validate_portrait_image
 from app.core.prompt_engine import PromptEngine
-from app.core.storage import save_upload
+from app.core.storage import cleanup_upload_file, save_upload
 from app.database import get_session_factory
 from app.dependencies import DbSession, SecurityDep
 from app.models.enums import AppType
@@ -42,6 +43,15 @@ async def generate_neurobox(
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(exc)) from exc
 
     input_path = await save_upload(interaction_token, photo, suffix="_photo")
+    try:
+        validate_portrait_image(input_path)
+    except ValueError as exc:
+        cleanup_upload_file(input_path)
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=str(exc),
+        ) from exc
+
     task_manager = TaskManager(security.redis)
     task_id = await task_manager.create_task(
         db,
