@@ -106,6 +106,12 @@ def create_app() -> FastAPI:
             name="artists",
         )
 
+    @app.get("/")
+    async def root() -> dict[str, str]:
+        from app.core.timezone import msk_iso, now_msk
+
+        return {"status": "Live", "server_time_msk": msk_iso(now_msk())}
+
     @app.get("/health")
     async def health() -> dict[str, str]:
         from app.core.timezone import msk_iso, now_msk
