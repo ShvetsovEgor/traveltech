@@ -1,4 +1,4 @@
-"""Load prompt catalog from editable JSON file (reloads when file changes)."""
+"""Load prompt catalog from editable JSON file (always fresh read from disk)."""
 
 from __future__ import annotations
 
@@ -10,9 +10,6 @@ from app.config import get_settings
 
 _PROJECT_ROOT = Path(__file__).resolve().parent.parent.parent
 _DEFAULT_PROMPTS_FILE = _PROJECT_ROOT / "prompts" / "prompts.json"
-
-_cache_mtime: float | None = None
-_cache_data: dict[str, Any] | None = None
 
 
 def prompts_file_path() -> Path:
@@ -26,8 +23,8 @@ def prompts_file_path() -> Path:
 
 
 def load_prompts_catalog(*, force_reload: bool = False) -> dict[str, Any]:
-    """Read prompts/prompts.json; pick up edits without server restart."""
-    global _cache_mtime, _cache_data
+    """Read prompts/prompts.json. force_reload kept for API compatibility."""
+    del force_reload
 
     path = prompts_file_path()
     if not path.is_file():
@@ -36,10 +33,6 @@ def load_prompts_catalog(*, force_reload: bool = False) -> dict[str, Any]:
             "Create prompts/prompts.json or set PROMPTS_FILE in .env"
         )
 
-    mtime = path.stat().st_mtime
-    if not force_reload and _cache_data is not None and _cache_mtime == mtime:
-        return _cache_data
-
     with path.open(encoding="utf-8") as fh:
         data = json.load(fh)
 
@@ -47,6 +40,4 @@ def load_prompts_catalog(*, force_reload: bool = False) -> dict[str, Any]:
         if key not in data:
             raise ValueError(f"Prompt catalog missing required section: {key!r}")
 
-    _cache_mtime = mtime
-    _cache_data = data
     return data

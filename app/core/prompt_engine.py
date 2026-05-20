@@ -16,17 +16,65 @@ class PromptEngine:
     """Assembles prompts: base style + UI options + technical suffix."""
 
     @staticmethod
-    def _catalog() -> dict[str, Any]:
-        return load_prompts_catalog()
+    def _catalog(*, force_reload: bool = False) -> dict[str, Any]:
+        return load_prompts_catalog(force_reload=force_reload)
+
+    @staticmethod
+    def _style_cfg(
+        section: str,
+        style_id: str,
+    ) -> tuple[dict[str, Any], dict[str, Any]]:
+        """Load style config; reload catalog once if cache was stale."""
+        catalog = PromptEngine._catalog()
+        styles: dict[str, Any] = catalog[section]
+        cfg = styles.get(style_id)
+        if cfg:
+            return catalog, cfg
+        catalog = PromptEngine._catalog(force_reload=True)
+        styles = catalog[section]
+        cfg = styles.get(style_id)
+        if not cfg:
+            available = ", ".join(sorted(styles))
+            if section == "artist_styles":
+                raise ValueError(
+                    f"Unknown artist style_id: {style_id}. "
+                    f"Available: {available}"
+                )
+            if section == "neurobox_styles":
+                raise ValueError(
+                    f"Unknown neurobox style_id: {style_id}. "
+                    f"Available: {available}"
+                )
+            raise ValueError(f"Unknown style_id: {style_id}")
+        return catalog, cfg
+
+    @staticmethod
+    def _map_neurobox_options(cfg: dict[str, Any], options: list[str]) -> list[str]:
+        """Resolve UI labels to prompt fragments (flat option_map or option_groups)."""
+        option_map: dict[str, str] = cfg.get("option_map", {})
+        groups: dict[str, dict[str, str]] = cfg.get("option_groups", {})
+        lookup: dict[str, str] = {**option_map}
+        for group in groups.values():
+            lookup.update(group)
+        seen: set[str] = set()
+        mapped: list[str] = []
+        for label in options:
+            fragment = lookup.get(label)
+            if fragment and fragment not in seen:
+                seen.add(fragment)
+                mapped.append(fragment)
+        return mapped
 
     @staticmethod
     def build_artist_prompt(style_id: str, extra_options: list[str] | None = None) -> str:
-        catalog = PromptEngine._catalog()
-        styles = catalog["artist_styles"]
-        cfg = styles.get(style_id)
-        if not cfg:
-            raise ValueError(f"Unknown artist style_id: {style_id}")
+        catalog, cfg = PromptEngine._style_cfg("artist_styles", style_id)
         parts = [cfg["base"]]
+        signature = cfg.get("signature_elements")
+        if signature:
+            parts.append(signature)
+        structure = cfg.get("structure_preserve")
+        if structure:
+            parts.append(structure)
         if extra_options:
             parts.append(", ".join(extra_options))
         parts.append(catalog["technical"]["image"])
@@ -38,15 +86,10 @@ class PromptEngine:
         options: list[str] | None = None,
         gender: str | None = None,
     ) -> str:
-        catalog = PromptEngine._catalog()
-        styles = catalog["neurobox_styles"]
-        cfg = styles.get(style_id)
-        if not cfg:
-            raise ValueError(f"Unknown neurobox style_id: {style_id}")
+        catalog, cfg = PromptEngine._style_cfg("neurobox_styles", style_id)
         parts = [cfg["base"]]
-        option_map: dict[str, str] = cfg.get("option_map", {})
         if options:
-            mapped = [option_map[o] for o in options if o in option_map]
+            mapped = PromptEngine._map_neurobox_options(cfg, options)
             if mapped:
                 parts.append(", ".join(mapped))
         gender_prompts: dict[str, str] = catalog["gender"]

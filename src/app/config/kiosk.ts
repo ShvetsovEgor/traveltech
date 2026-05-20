@@ -17,14 +17,14 @@ export type InteractiveItem = {
 
 export const INTERACTIVE_ITEMS: InteractiveItem[] = [
   {
-    title: "Нейрохудожник",
+    title: "ИИ-творец",
     description: "Картина в стиле великих художников",
     icon: Palette,
     path: "/neural-artist",
     appType: "neuro_artist",
   },
   {
-    title: "Нейробокс",
+    title: "Нейростилист",
     description: "Стилизация лица и мемы",
     icon: Box,
     path: "/neural-box",

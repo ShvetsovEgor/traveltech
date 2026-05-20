@@ -23,7 +23,7 @@ export function NeuralBoxPhoto() {
   const navigate = useNavigate();
   const location = useLocation();
   const { style, options = [], gender } = location.state || {};
-  const { interactionToken } = useKiosk();
+  const { interactionToken, ensureInteraction } = useKiosk();
 
   const [countdown, setCountdown] = useState<number | null>(null);
   const [photoTaken, setPhotoTaken] = useState(false);
@@ -76,12 +76,26 @@ export function NeuralBoxPhoto() {
   };
 
   const startGeneration = async (file: File) => {
-    if (!interactionToken || !style) return;
+    if (!style) return;
 
     const photoError = await validatePortraitFile(file);
     if (photoError) {
       setError(photoError);
       return;
+    }
+
+    let token = interactionToken;
+    if (!token) {
+      try {
+        token = await ensureInteraction("neurobox");
+      } catch (e) {
+        setError(
+          e instanceof Error
+            ? e.message
+            : "Сессия не активна. Вернитесь в меню и откройте «Нейростилист» заново."
+        );
+        return;
+      }
     }
 
     setIsGenerating(true);
@@ -90,7 +104,7 @@ export function NeuralBoxPhoto() {
       const res = await api.neuroboxGenerate(
         file,
         style,
-        interactionToken,
+        token,
         options,
         gender
       );

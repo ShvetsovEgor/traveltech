@@ -6,23 +6,45 @@
     "face_lock_tag": "[FACE LOCK: ON]"
   },
   "artist_styles": {
+    "mucha": {
+      "base": "Transform the sketch into the style of Alphonse Mucha, Art Nouveau, while EXACTLY preserving the original sketch's shapes, proportions, line art, composition, and size of all elements. Do NOT change the pose, layout, or spatial relationships. Only apply Mucha's aesthetic: flowing lines, ornate decorative borders, soft pastel and earthy tones, a prominent halo or circular motif behind the subject, and elegant idealized details. Keep the original contours intact.",
+      "signature_elements": "decorative arch, floral crown, Byzantine-inspired details, flat colors with subtle gradients",
+      "structure_preserve": "CRITICAL: Preserve the original sketch's line art, silhouette, proportions, object sizes, and spatial arrangement exactly. Only the rendering style, colors, and decorative additions change."
+    },
+    "wlop": {
+      "base": "Render the sketch in the digital style of WLOP (Wang Ling), while EXACTLY preserving the original sketch's shapes, proportions, line art, composition, and size of all elements. Do NOT alter the pose, layout, or structural details. Apply WLOP's aesthetic: dark moody atmosphere, sharp contrast with glowing ethereal light, detailed mechanical or ornate fantasy elements, falling particles, and cinematic melancholic coloring. Keep the original contours intact.",
+      "signature_elements": "god rays, detailed metallic textures, glowing eyes, floating debris, smooth digital blending",
+      "structure_preserve": "CRITICAL: Preserve the original sketch's line art, silhouette, proportions, object sizes, and spatial arrangement exactly. Only lighting, textures, and atmospheric effects change."
+    },
+    "rembrandt": {
+      "base": "Paint the sketch in the style of Rembrandt van Rijn (Dutch Golden Age chiaroscuro), while EXACTLY preserving the original sketch's shapes, proportions, line art, composition, and size of all elements. Do NOT alter the pose, layout, or structural details. Apply Rembrandt's aesthetic: single dramatic light source emerging from deep darkness, warm earthy tones, thick impasto brushstrokes, deep psychological depth, and Old Masters oil painting quality. Keep the original contours intact.",
+      "signature_elements": "tenebrism, dark brown/black backgrounds, golden light on face, painterly texture, oil on canvas look",
+      "structure_preserve": "CRITICAL: Preserve the original sketch's line art, silhouette, proportions, object sizes, and spatial arrangement exactly. Only lighting, shadows, and painterly rendering change."
+    },
     "vangogh": {
-      "base": "Transform the sketch into a post-impressionist oil painting in the style of Vincent van Gogh, swirling brushstrokes, vivid colors."
+      "base": "Transform the sketch into a post-impressionist oil painting in the style of Vincent van Gogh, while EXACTLY preserving the original sketch's shapes, proportions, line art, composition, and size of all elements. Do NOT change the pose, layout, or structural boundaries. Apply Van Gogh's aesthetic: swirling expressive brushstrokes, thick impasto texture, vibrant contrasting colors (yellows, blues, greens), and emotional turbulent energy. Keep the original contours visible beneath the brushwork.",
+      "signature_elements": "swirling skies, thick paint strokes, visible canvas texture, emotional intensity",
+      "structure_preserve": "CRITICAL: Preserve the original sketch's line art, silhouette, proportions, object sizes, and spatial arrangement exactly. Only brushwork, texture, and color palette change."
     },
     "picasso": {
-      "base": "Transform the sketch into a cubist painting in the style of Pablo Picasso, geometric forms, fragmented perspective."
-    },
-    "monet": {
-      "base": "Transform the sketch into an impressionist painting in the style of Claude Monet, soft light, atmospheric brushwork."
+      "base": "Render the sketch in the Cubist style of Pablo Picasso, while EXACTLY preserving the original sketch's overall shapes, proportions, composition, and size of all elements. Do NOT change the layout or structural relationships. Apply Picasso's aesthetic: fragment the subject into geometric shapes, show multiple viewpoints simultaneously (front and profile), use a muted palette of blues, pinks, ochres, and grays, with sharp angled lines. The original contours act as the constraint for fragmentation.",
+      "signature_elements": "geometric fragmentation, abstracted features, multi-perspective view (cubism), synthetic or analytical phase style",
+      "structure_preserve": "CRITICAL: Preserve the original sketch's silhouette, proportion relationships, object sizes, and spatial arrangement. Fragmentation must respect original boundaries."
     },
     "dali": {
-      "base": "Transform the sketch into a surrealist painting in the style of Salvador Dalí, dreamlike imagery, symbolic elements."
+      "base": "Create a surrealist scene in the style of Salvador Dali, while EXACTLY preserving the original sketch's shapes, proportions, line art, composition, and size of all elements. Do NOT change the pose, layout, or structural anchors. Apply Dali's aesthetic: hyper-realistic rendering of bizarre dreamlike landscapes, melting objects, barren deserts, floating geometries, crutches, and distant ethereal light. Keep the original contours as the skeleton for surreal transformation.",
+      "signature_elements": "melting clocks, dreamlike desert landscapes, surreal juxtapositions, shadows, long-legged elephants",
+      "structure_preserve": "CRITICAL: Preserve the original sketch's line art, silhouette, proportions, object sizes, and spatial arrangement exactly. Surreal distortions (melting, floating) must originate from original contours."
     },
     "kandinsky": {
-      "base": "Transform the sketch into an abstract composition in the style of Wassily Kandinsky, bold colors, geometric abstraction."
+      "base": "Generate an abstract composition in the style of Wassily Kandinsky, while using the original sketch's shapes, proportions, composition, and size as constraints. The sketch's elements should be replaced by or interpreted as Kandinsky's abstract geometric forms (lines, circles, arcs, chevrons) while preserving their relative positions, sizes, and spatial relationships. Apply vibrant emotional colors and avoid realistic figures.",
+      "signature_elements": "abstract geometry, bold primary colors mixed with pastels, musical inspiration, floating shapes",
+      "structure_preserve": "CRITICAL: Preserve the original sketch's proportional relationships, object sizes, and spatial arrangement. Translate each contour into abstract geometry without changing layout."
     },
-    "klimt": {
-      "base": "Transform the sketch into an art nouveau painting in the style of Gustav Klimt, decorative patterns, gold accents."
+    "lego": {
+      "base": "Transform the sketch into a LEGO brick-built scene, while EXACTLY preserving the original sketch's shapes, proportions, line art, composition, and size of all elements. Do NOT change the pose, layout, or spatial relationships. Apply LEGO aesthetic: subjects and objects built from colorful interlocking plastic bricks with visible studs, minifigure-style characters where applicable, glossy plastic material, clean studio lighting, toy product photography quality. The sketch acts as the blueprint for brick placement.",
+      "signature_elements": "LEGO minifigure faces, brick texture with round studs, bright primary colors (red, yellow, blue, white, black), plastic sheen, blocky simplified forms",
+      "structure_preserve": "CRITICAL: Preserve the original sketch's line art, silhouette, proportions, object sizes, and spatial arrangement exactly. Only material (plastic bricks) and LEGO rendering change."
     }
   },
   "neurobox_styles": {
@@ -31,20 +53,6 @@
       "option_map": {
         "Яркие цвета": "vibrant saturated palette",
         "Большие глаза": "large expressive anime eyes"
-      }
-    },
-    "cartoon": {
-      "base": "Stylize the portrait as a modern cartoon character.",
-      "option_map": {
-        "3D стиль": "3D Pixar-style rendering",
-        "Пиксельный": "pixel art retro game style"
-      }
-    },
-    "renaissance": {
-      "base": "Stylize the portrait as a Renaissance oil painting.",
-      "option_map": {
-        "Классика": "classical Renaissance composition",
-        "Барокко": "dramatic baroque lighting and richness"
       }
     },
     "cyberpunk": {
@@ -62,10 +70,52 @@
       }
     },
     "superhero": {
-      "base": "Stylize the portrait as a comic book superhero.",
-      "option_map": {
-        "Marvel": "Marvel cinematic superhero style",
-        "DC": "DC comics dramatic superhero style"
+      "base": "Generate a full-body image of a character dressed as Superman. Preserve the original face exactly as in the reference — do not alter facial features, expression, or identity. Costume: classic blue suit with red boots and yellow belt. Background: rooftop at sunset. Lighting: warm golden hour, soft rim light. Aspect ratio: 3:4. No distortions, no face merging, no artifacts.",
+      "option_groups": {
+        "style": {
+          "Реалистик": "photorealistic, 8K, detailed skin texture, natural lighting, shot on 35mm film",
+          "Семи-реалистик": "semi-realistic, digital painting style, soft shading, slightly stylized but believable anatomy",
+          "Комикс": "comic book art style, bold black ink lines, cel-shaded, vibrant saturated colors, Marvel/DC style",
+          "Кинематографичный": "cinematic lighting, movie still, anamorphic lens, shallow depth of field, color graded teal-orange"
+        },
+        "pose": {
+          "Классическая героическая": "hands on hips, feet shoulder-width apart, cape fully spread",
+          "Полет": "flying pose diagonally upward, one fist forward, one arm back, cape trailing horizontally",
+          "Приземление": "one knee on ground, one fist pressed into concrete, head slightly lowered, dramatic impact",
+          "Динамичный рывок": "running forward at high speed, torso twisted, clenched fist, wind effect on suit",
+          "Расслабленный герой": "leaning against rooftop ledge, one hand in pocket, slight smirk, cape draped over shoulder"
+        }
+      }
+    },
+    "barbie": {
+      "base": "[FACE PRESERVE: strict] Use exact reference face. Do not replace with generic Barbie face. Only change outfit, hair styling, pose, and background to Barbie aesthetic. Generate a full-body image of a character dressed as Barbie (fashion doll aesthetic). Preserve the original face exactly as in the reference — do not alter facial features, expression, or identity. Costume: classic Barbie pink dress or pink outfit, blonde hair styled, high heels. Background: pastel pink dreamhouse or Malibu beach at sunset. Lighting: soft, even, high-key lighting, no harsh shadows, glossy and clean. Aspect ratio: 3:4. No face distortion, no plastic-looking artifacts unless intentional.",
+      "option_groups": {
+        "style": {
+          "Реалистик": "photorealistic, human-like texture, glossy makeup, natural skin pores, soft focus, high fashion magazine quality",
+          "Семи-реалистик": "semi-realistic, rendered like a high-end CGI doll, smooth shading, idealized features, slightly stylized hair",
+          "Кукольный": "plastic doll aesthetic, visible seams on arms and legs, shiny vinyl skin, articulation joints, Mattel toy product shot",
+          "Кинематографичный": "cinematic lighting, pastel color palette, soft dreamy background, Margot Robbie Barbie movie aesthetic, slightly vintage tone"
+        },
+        "pose": {
+          "Классическая Барби": "one hand on hip, knees slightly bent, smiling at camera, weight on back leg, other arm relaxed",
+          "В машине": "sitting in pink convertible, hands on steering wheel, wind blowing hair back, laughing",
+          "На пляже": "standing on sand, holding a beach ball or sunglasses, one leg lifted slightly back, playful expression",
+          "Dreamhouse поза": "holding a tiny pink accessory (purse or comb), looking sideways, slightly tilted head, elegant and casual",
+          "Фотосессия / мода": "runway walk pose, one foot in front of the other, both hands on hips, chin slightly up, high fashion glare"
+        }
+      }
+    },
+    "mem": {
+      "base": "[SAME IDENTITY: strict] The person in left panel and right panel must be the same individual. Same face, same nose, same eyes, same age, same skin. Only expression changes. Generate a two-panel meme. Left panel: person from the reference photo smiling widely, looking at phone screen with happy expression. Right panel: same person, now extremely angry and disappointed, still holding the phone slightly lowered, furrowed brows, tense jaw. Photorealistic, Breaking Bad TV quality. Both panels neutral background. Side by side layout. No text. Preserve exact face in both panels."
+    },
+    "tatar": {
+      "base": "Generate a full-body cartoon character wearing traditional Tatar national costume. CRITICAL: Preserve the original face EXACTLY as in the reference image. Do NOT change facial features, face shape, eye shape, nose, lips, skin tone, age, or expression structure. Only the clothing, hairstyle (if needed for headpiece), and background may change. The face must remain identical to the reference — not generic, not stylized into a different person. Costume: Tatar outfit — camisole with embroidery, kalfak (female) or tubeteyka (male), leather boots. Style: 2D cartoon, clean lines, bright colors. Background: simple. NO face alteration. NO merging with other faces. Identity preservation is the highest priority.",
+      "option_groups": {
+        "face": {
+          "Реалистичное лицо + мультяшное тело": "realistic human face (from reference) on a cartoon body — contrast style. Face unchanged. Body is 2D vector cartoon.",
+          "Легкая стилизация лица (допустима)": "face can be slightly simplified but must remain 100% recognizable as the same person. No proportions changed.",
+          "Полностью мультяшное лицо, но черты сохранены": "cartoon face but using exact facial landmarks from reference — same eye shape, nose, mouth position, face contour"
+        }
       }
     }
   },

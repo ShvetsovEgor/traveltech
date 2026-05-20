@@ -16,6 +16,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 
 from app.config import get_settings
+from app.core.prompt_loader import load_prompts_catalog, prompts_file_path
 from app.core.security import SecurityService
 from app.database import init_db
 from app.dependencies import init_dependencies, shutdown_dependencies
@@ -44,7 +45,13 @@ async def lifespan(app: FastAPI):
         session_cleanup_loop(redis, security, stop_event=stop_event)
     )
 
-    logger.info("TravelTech API started (timestamps: Europe/Moscow)")
+    catalog = load_prompts_catalog()
+    logger.info(
+        "TravelTech API started (timestamps: Europe/Moscow). "
+        "Prompts: %s (neurobox: %s)",
+        prompts_file_path(),
+        ", ".join(sorted(catalog["neurobox_styles"])),
+    )
     yield
 
     stop_event.set()
@@ -83,6 +90,21 @@ def create_app() -> FastAPI:
         StaticFiles(directory=settings.static_results_dir),
         name="static_results",
     )
+    static_root = Path(__file__).resolve().parent.parent / "static"
+    neuro_styles_dir = static_root / "neuro_styles"
+    if neuro_styles_dir.is_dir():
+        app.mount(
+            "/static/neuro_styles",
+            StaticFiles(directory=str(neuro_styles_dir)),
+            name="neuro_styles",
+        )
+    artists_dir = static_root / "artists"
+    if artists_dir.is_dir():
+        app.mount(
+            "/static/artists",
+            StaticFiles(directory=str(artists_dir)),
+            name="artists",
+        )
 
     @app.get("/health")
     async def health() -> dict[str, str]:

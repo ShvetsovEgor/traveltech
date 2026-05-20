@@ -51,6 +51,7 @@ class Settings(BaseSettings):
     public_base_url: str = "http://127.0.0.1:8000"
 
     log_level: Literal["DEBUG", "INFO", "WARNING", "ERROR"] = "INFO"
+    generation_log_path: str = "data/generations.log"
 
     # AI prompts catalog (JSON). Keys must match UI option labels in option_map.
     prompts_file: str = "prompts/prompts.json"

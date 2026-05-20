@@ -8,7 +8,13 @@ import type {
   TaskStatusResponse,
 } from "./types";
 
-const API_BASE = import.meta.env.VITE_API_URL ?? "";
+/**
+ * Dev: пустой base → запросы на /api идут через прокси Vite (vite.config.ts → :8000).
+ * Иначе старый VITE_API_URL мог остаться в кэше сборки и бить в Render без mem/lego.
+ */
+const API_BASE = import.meta.env.DEV
+  ? ""
+  : (import.meta.env.VITE_API_URL?.trim() ?? "");
 
 async function request<T>(
   path: string,

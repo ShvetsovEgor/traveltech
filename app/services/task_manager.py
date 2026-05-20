@@ -16,6 +16,7 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.config import get_settings
+from app.core.generation_log import append_generation_log
 from app.core.storage import cleanup_upload_file, result_path, result_url
 from app.core.timezone import msk_iso, now_msk
 from app.models.enums import AppType, TaskStatus
@@ -25,6 +26,12 @@ from app.services.redis_client import RedisStore
 logger = logging.getLogger(__name__)
 
 _executor = ThreadPoolExecutor(max_workers=4, thread_name_prefix="ai-worker")
+
+
+def _generation_media_type(app_type: str) -> str:
+    if app_type == AppType.VIDEO_MAGIC.value:
+        return "video"
+    return "photo"
 
 
 class TaskManager:
@@ -103,6 +110,17 @@ class TaskManager:
             if error_message:
                 record.error_message = error_message
             await db.commit()
+            if status == TaskStatus.COMPLETED:
+                at = msk_iso(now)
+                media_type = _generation_media_type(record.app_type)
+                settings = get_settings()
+                append_generation_log(
+                    log_path=settings.generation_log_path,
+                    at_msk=at,
+                    media_type=media_type,
+                    app_type=record.app_type,
+                    task_id=task_id,
+                )
 
         ext = Path(result_path_value).suffix if result_path_value else ".jpeg"
         url = result_url(task_id, ext) if status == TaskStatus.COMPLETED else None

@@ -7,6 +7,8 @@ type SelectionCardProps = {
   description?: string;
   coverSrc?: string;
   coverAlt?: string;
+  /** contain — целиком; cover — заполняет квадрат со скруглением */
+  coverFit?: "contain" | "cover";
   emoji?: string;
   icon?: LucideIcon;
   iconClassName?: string;
@@ -22,6 +24,7 @@ export function SelectionCard({
   description,
   coverSrc,
   coverAlt = "",
+  coverFit = "contain",
   emoji,
   icon: Icon,
   iconClassName,
@@ -38,7 +41,8 @@ export function SelectionCard({
   return (
     <Card
       className={cn(
-        "p-5 md:p-6 transition-shadow cursor-pointer h-full",
+        "px-4 pt-3.5 pb-2.5 sm:px-5 sm:pt-4 sm:pb-3 transition-shadow cursor-pointer h-full",
+        withCover && "overflow-hidden rounded-3xl",
         centered && "flex flex-col items-center text-center",
         selected && "ring-2 ring-accent shadow-lg",
         disabled && "opacity-50 cursor-not-allowed pointer-events-none",
@@ -47,11 +51,14 @@ export function SelectionCard({
       onClick={disabled ? undefined : onPress}
     >
       {coverSrc && (
-        <div className="mb-4 flex h-28 w-full items-center justify-center overflow-hidden rounded-2xl bg-default-100 md:h-36">
+        <div className="mx-auto mb-2 aspect-square w-[82%] max-w-[10.5rem] overflow-hidden rounded-xl bg-default-100 sm:max-w-[11.5rem]">
           <img
             src={coverSrc}
             alt={coverAlt || title}
-            className="max-h-full max-w-full object-contain"
+            className={cn(
+              "size-full rounded-xl",
+              coverFit === "cover" ? "object-cover" : "object-contain"
+            )}
             draggable={false}
           />
         </div>
@@ -69,14 +76,14 @@ export function SelectionCard({
       )}
       <Card.Title
         className={cn(
-          "text-lg font-semibold text-foreground sm:text-xl md:text-2xl",
+          "!m-0 !py-0 text-lg font-semibold leading-none text-foreground sm:text-xl md:text-2xl",
           centered && "w-full"
         )}
       >
         {title}
       </Card.Title>
       {description && (
-        <Card.Description className="mt-1 text-sm text-muted-foreground sm:text-base">
+        <Card.Description className="!m-0 !mt-0.5 !py-0 text-sm text-muted-foreground sm:text-base">
           {description}
         </Card.Description>
       )}

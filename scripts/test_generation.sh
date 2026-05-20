@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Тест полного цикла API с реальной генерацией (Нейрохудожник).
+# Тест полного цикла API с реальной генерацией (ИИ-творец).
 # Использование: ./scripts/test_generation.sh /path/to/sketch.jpg
 set -euo pipefail
 

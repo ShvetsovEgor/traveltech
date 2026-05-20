@@ -1,6 +1,6 @@
 from ai_services import generate_stylized_image, generate_video_from_image
 
-# Пример 1: Вызов Нейрохудожника/Нейробокса
+# Пример 1: Вызов ИИ-творца/Нейростилиста
 pic_prompt = "A cinematic photorealistic portrait of a man in the style of Peaky Blinders..."
 is_pic_success = generate_stylized_image(
     input_image_path="webcam_face.jpg",
