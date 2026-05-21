@@ -3,6 +3,7 @@ export { KioskScreen } from "./KioskScreen";
 export { KioskHeader } from "./KioskHeader";
 export { KioskBody } from "./KioskBody";
 export { SelectionCard } from "./SelectionCard";
+export { KioskCameraViewport } from "./KioskCameraViewport";
 export { MediaWithQrOverlay } from "./MediaWithQrOverlay";
 export { LoadingStepsList } from "./LoadingStepsList";
 export type { LoadingStep } from "./LoadingStepsList";

@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect } from "react";
 import { useNavigate } from "react-router";
 import { Camera, RotateCcw, Video } from "lucide-react";
-import { Alert, Button, Card, Typography } from "@heroui/react";
+import { Alert, Button, Typography } from "@heroui/react";
 import {
   captureVideoFrameAsDataUrl,
   captureVideoFrameAsFile,
@@ -9,10 +9,12 @@ import {
   validatePortraitFile,
 } from "../../utils/media";
 import { saveVideoPhotoDataUrl, clearVideoPhotoDataUrl } from "../../utils/videoPhotoStore";
-import { KioskBody, KioskHeader, KioskScreen } from "../kiosk";
+import { useKioskCameraLayout } from "../../hooks/useKioskCameraLayout";
+import { KioskBody, KioskCameraViewport, KioskHeader, KioskScreen } from "../kiosk";
 
 export function VideoAnimation() {
   const navigate = useNavigate();
+  const cameraLayout = useKioskCameraLayout();
   const [countdown, setCountdown] = useState<number | null>(null);
   const [photoTaken, setPhotoTaken] = useState(false);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
@@ -77,8 +79,12 @@ export function VideoAnimation() {
         return;
       }
 
-      const dataUrl = captureVideoFrameAsDataUrl(video);
-      const photoFile = await captureVideoFrameAsFile(video);
+      const dataUrl = captureVideoFrameAsDataUrl(video, cameraLayout.rotationCw);
+      const photoFile = await captureVideoFrameAsFile(
+        video,
+        "photo.jpg",
+        cameraLayout.rotationCw
+      );
       stopCamera();
 
       if (!dataUrl || !photoFile) {
@@ -100,7 +106,7 @@ export function VideoAnimation() {
     };
 
     void capture();
-  }, [countdown, cameraError]);
+  }, [countdown, cameraError, cameraLayout.rotationCw]);
 
   const handleRetake = () => {
     setPhotoTaken(false);
@@ -155,32 +161,16 @@ export function VideoAnimation() {
             </Alert>
           )}
 
-          <Card className="relative aspect-[4/3] w-full max-w-2xl max-h-[min(52vh,420px)] overflow-hidden p-0 bg-black">
-            {!photoTaken ? (
-              cameraError ? (
-                <div className="flex h-full w-full items-center justify-center p-8 text-center text-muted">
-                  Камера недоступна. Разрешите доступ в настройках браузера и
-                  обновите страницу — без фото генерация не запускается.
-                </div>
-              ) : (
-                <video
-                  ref={videoRef}
-                  autoPlay
-                  playsInline
-                  muted
-                  className="h-full w-full object-cover"
-                />
-              )
-            ) : (
-              previewUrl && (
-                <img
-                  src={previewUrl}
-                  alt="Предпросмотр"
-                  className="h-full w-full object-cover"
-                />
-              )
-            )}
-
+          <KioskCameraViewport
+            layout={cameraLayout}
+            videoRef={videoRef}
+            showVideo={!photoTaken}
+            showImage={photoTaken}
+            imageSrc={previewUrl}
+            imageAlt="Предпросмотр"
+            cameraError={cameraError}
+            cameraErrorMessage="Камера недоступна. Разрешите доступ в настройках браузера и обновите страницу — без фото генерация не запускается."
+          >
             {countdown !== null && countdown > 0 && (
               <div className="absolute inset-0 flex items-center justify-center bg-black/50">
                 <Typography.Heading level={1} className="text-9xl text-white">
@@ -188,7 +178,7 @@ export function VideoAnimation() {
                 </Typography.Heading>
               </div>
             )}
-          </Card>
+          </KioskCameraViewport>
 
           {!photoTaken ? (
             <Button

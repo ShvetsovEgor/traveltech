@@ -4,12 +4,12 @@ import { Camera, RotateCcw } from "lucide-react";
 import {
   Alert,
   Button,
-  Card,
   ProgressCircle,
   Typography,
 } from "@heroui/react";
 import { api, resolveMediaUrl } from "../../api/client";
 import { useKiosk } from "../../context/KioskContext";
+import { useKioskCameraLayout } from "../../hooks/useKioskCameraLayout";
 import { useTaskPolling } from "../../hooks/useTaskPolling";
 import {
   captureVideoFrameAsDataUrl,
@@ -17,13 +17,20 @@ import {
   isVideoFrameReady,
   validatePortraitFile,
 } from "../../utils/media";
-import { KioskBody, KioskHeader, KioskScreen, MediaWithQrOverlay } from "../kiosk";
+import {
+  KioskBody,
+  KioskCameraViewport,
+  KioskHeader,
+  KioskScreen,
+  MediaWithQrOverlay,
+} from "../kiosk";
 
 export function NeuralBoxPhoto() {
   const navigate = useNavigate();
   const location = useLocation();
   const { style, options = [], gender } = location.state || {};
   const { interactionToken, ensureInteraction } = useKiosk();
+  const cameraLayout = useKioskCameraLayout();
 
   const [countdown, setCountdown] = useState<number | null>(null);
   const [photoTaken, setPhotoTaken] = useState(false);
@@ -146,8 +153,12 @@ export function NeuralBoxPhoto() {
         return;
       }
 
-      const dataUrl = captureVideoFrameAsDataUrl(video);
-      const file = await captureVideoFrameAsFile(video);
+      const dataUrl = captureVideoFrameAsDataUrl(video, cameraLayout.rotationCw);
+      const file = await captureVideoFrameAsFile(
+        video,
+        "photo.jpg",
+        cameraLayout.rotationCw
+      );
       stopCamera();
 
       if (!dataUrl || !file) {
@@ -168,7 +179,7 @@ export function NeuralBoxPhoto() {
       setPhotoTaken(true);
     };
     void capture();
-  }, [countdown, cameraError]);
+  }, [countdown, cameraError, cameraLayout.rotationCw]);
 
   const handleConfirm = async () => {
     const file = photoFileRef.current;
@@ -228,35 +239,23 @@ export function NeuralBoxPhoto() {
               Проверьте фото и нажмите «Готово»
             </Typography.Paragraph>
           )}
-          <Card className="relative aspect-[4/3] w-full max-w-2xl max-h-[min(52vh,420px)] overflow-hidden p-0 bg-black">
-            {!photoTaken ? (
-              cameraError ? (
-                <div className="flex h-full w-full items-center justify-center p-8 text-center text-muted">
-                  Камера недоступна. Без фото генерация не запускается.
-                </div>
-              ) : (
-                <video
-                  ref={videoRef}
-                  autoPlay
-                  playsInline
-                  muted
-                  className="w-full h-full object-cover"
-                />
-              )
-            ) : (
-              displayUrl && (
-                <img src={displayUrl} alt="Фото" className="w-full h-full object-cover" />
-              )
-            )}
-
+          <KioskCameraViewport
+            layout={cameraLayout}
+            videoRef={videoRef}
+            showVideo={!photoTaken}
+            showImage={photoTaken}
+            imageSrc={displayUrl}
+            cameraError={cameraError}
+            cameraErrorMessage="Камера недоступна. Без фото генерация не запускается."
+          >
             {countdown !== null && countdown > 0 && (
-              <div className="absolute inset-0 bg-black/50 flex items-center justify-center">
+              <div className="absolute inset-0 flex items-center justify-center bg-black/50">
                 <Typography.Heading level={1} className="text-9xl text-white">
                   {countdown}
                 </Typography.Heading>
               </div>
             )}
-          </Card>
+          </KioskCameraViewport>
 
           {!photoTaken && !isGenerating ? (
             <Button

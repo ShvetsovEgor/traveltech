@@ -7,20 +7,13 @@ import type {
   LoginResponse,
   TaskStatusResponse,
 } from "./types";
-
-/**
- * Dev: пустой base → запросы на /api идут через прокси Vite (vite.config.ts → :8000).
- * Иначе старый VITE_API_URL мог остаться в кэше сборки и бить в Render без mem/lego.
- */
-const API_BASE = import.meta.env.DEV
-  ? ""
-  : (import.meta.env.VITE_API_URL?.trim() ?? "");
+import { buildApiUrl } from "./resolveApiBase";
 
 async function request<T>(
   path: string,
   init?: RequestInit
 ): Promise<T> {
-  const res = await fetch(`${API_BASE}${path}`, init);
+  const res = await fetch(buildApiUrl(path), init);
   if (!res.ok) {
     let detail = res.statusText;
     try {
@@ -134,7 +127,12 @@ export const api = {
   },
 };
 
+/** Обложки /static/* и result_url с бэкенда (на проде — Render, не хост фронта). */
+export function assetUrl(path: string): string {
+  if (path.startsWith("http")) return path;
+  return buildApiUrl(path);
+}
+
 export function resolveMediaUrl(url: string): string {
-  if (url.startsWith("http")) return url;
-  return `${API_BASE}${url}`;
+  return assetUrl(url);
 }

@@ -1,6 +1,46 @@
+import type { CameraRotationCw } from "../config/kioskCamera";
+
 /** Минимальный размер JPEG с веб-камеры (заглушка 1×1 ~300 байт). */
 export const MIN_PORTRAIT_BYTES = 8_000;
 export const MIN_PORTRAIT_SIDE_PX = 200;
+
+function drawVideoToCanvas(
+  ctx: CanvasRenderingContext2D,
+  canvas: HTMLCanvasElement,
+  video: HTMLVideoElement,
+  rotationCw: CameraRotationCw
+): void {
+  const vw = video.videoWidth;
+  const vh = video.videoHeight;
+
+  if (rotationCw === 90 || rotationCw === 270) {
+    canvas.width = vh;
+    canvas.height = vw;
+  } else {
+    canvas.width = vw;
+    canvas.height = vh;
+  }
+
+  ctx.save();
+  switch (rotationCw) {
+    case 90:
+      ctx.translate(canvas.width, 0);
+      ctx.rotate(Math.PI / 2);
+      break;
+    case 180:
+      ctx.translate(canvas.width, canvas.height);
+      ctx.rotate(Math.PI);
+      break;
+    case 270:
+      ctx.translate(0, canvas.height);
+      ctx.rotate(-Math.PI / 2);
+      break;
+    default:
+      break;
+  }
+  ctx.drawImage(video, 0, 0, vw, vh);
+  ctx.restore();
+}
 
 export async function dataUrlToFile(
   dataUrl: string,
@@ -20,22 +60,24 @@ export function isVideoFrameReady(video: HTMLVideoElement): boolean {
   );
 }
 
-export function captureVideoFrameAsDataUrl(video: HTMLVideoElement): string | null {
+export function captureVideoFrameAsDataUrl(
+  video: HTMLVideoElement,
+  rotationCw: CameraRotationCw = 0
+): string | null {
   if (!isVideoFrameReady(video)) return null;
   const canvas = document.createElement("canvas");
-  canvas.width = video.videoWidth;
-  canvas.height = video.videoHeight;
   const ctx = canvas.getContext("2d");
   if (!ctx) return null;
-  ctx.drawImage(video, 0, 0);
+  drawVideoToCanvas(ctx, canvas, video, rotationCw);
   return canvas.toDataURL("image/jpeg", 0.92);
 }
 
 export async function captureVideoFrameAsFile(
   video: HTMLVideoElement,
-  filename = "photo.jpg"
+  filename = "photo.jpg",
+  rotationCw: CameraRotationCw = 0
 ): Promise<File | null> {
-  const dataUrl = captureVideoFrameAsDataUrl(video);
+  const dataUrl = captureVideoFrameAsDataUrl(video, rotationCw);
   if (!dataUrl) return null;
   return dataUrlToFile(dataUrl, filename);
 }

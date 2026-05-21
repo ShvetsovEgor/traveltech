@@ -12,6 +12,7 @@ import {
 } from "@heroui/react";
 import { api, resolveMediaUrl } from "../../api/client";
 import { useKiosk } from "../../context/KioskContext";
+import { useKioskCameraLayout } from "../../hooks/useKioskCameraLayout";
 import { useTaskPolling } from "../../hooks/useTaskPolling";
 import { validatePortraitFile } from "../../utils/media";
 import {
@@ -43,6 +44,7 @@ export function VideoAnimationScenario() {
   const location = useLocation();
   const navState = (location.state ?? {}) as LocationState;
   const { interactionToken, ensureInteraction } = useKiosk();
+  const cameraLayout = useKioskCameraLayout();
 
   const [photoFile, setPhotoFile] = useState<File | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(navState.previewUrl ?? null);
@@ -186,11 +188,11 @@ export function VideoAnimationScenario() {
         {!isGenerating && !showResult && (
           <div className="mx-auto max-w-6xl">
             {previewUrl && (
-              <Card className="mx-auto mb-4 aspect-[4/3] w-full max-w-xs overflow-hidden p-0 bg-black sm:max-w-sm">
+              <Card className={cameraLayout.compactFrameClassName}>
                 <img
                   src={previewUrl}
                   alt="Ваше фото для видео"
-                  className="h-full w-full object-cover"
+                  className={cameraLayout.previewClassName}
                 />
               </Card>
             )}

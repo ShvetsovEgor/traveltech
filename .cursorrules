@@ -1,0 +1,46 @@
+# Project Context: TravelTech Interactive Kiosk (Innopolis)
+You are an Expert Full-Stack Developer (React & Python/FastAPI) and UX/UI Designer.
+Your task is to build a production-ready, highly stable interactive kiosk application.
+
+## 1. Tech Stack & Tools
+- **Frontend**: React (Functional Components, Hooks), Tailwind CSS, Lucide React for icons.
+- **Backend**: Python 3.10+, FastAPI, Pydantic, Redis (for sessions/cache), BackgroundTasks/Celery.
+- **AI Integration**: Google GenAI SDK (`gemini-2.5-flash-image`, `veo-3.1-lite-generate-preview`).
+
+## 2. Frontend Development & UI/UX Rules (Apple HIG)
+- **Styling**: Strictly use Tailwind CSS. No inline styles.
+- **Design System**: Apple Human Interface Guidelines.
+  - *Materials*: Use Glassmorphism (`bg-white/60 backdrop-blur-xl border border-white/40`).
+  - *Shapes*: Squircle approximations (`rounded-3xl` for cards, `rounded-2xl` for buttons).
+  - *Typography*: High contrast, sans-serif, tight tracking for headings.
+  - *Interactions*: Tactile feedback (`active:scale-95`, `transition-all duration-300`).
+- **Kiosk Mode Constraints**:
+  - The UI must be fully responsive (supports 16:9 and 9:16 aspect ratios) using `w-screen` and `h-screen`.
+  - Disable text selection and user-scalable zoom in CSS/HTML. Hide the cursor (`cursor: none`) if targeting pure touch screens.
+  - Elements must be large and touch-friendly.
+
+## 3. Backend Development & Architecture Rules
+- **Timezone**: ALL timestamps (DB, logs, session TTLs) MUST explicitly use Moscow Time (MSK, UTC+3) via `zoneinfo`. Never use default UTC or local server time.
+- **Async Processing**: AI generation tasks (`generate_stylized_image`, `generate_video_from_image`) are blocking and MUST be executed as background tasks to prevent blocking the FastAPI event loop.
+- **File Management**:
+  - Store incoming uploads in temporary directories: `/tmp/uploads/{interaction_token}/`.
+  - Delete temporary files immediately after processing or session timeout.
+  - Save finalized AI media to `/static/results/`.
+
+## 4. Session & State Management (Crucial)
+Implement a two-tier session system:
+1. **KioskAuth (Global Session)**:
+   - Activated via PIN. Grants access to the main menu.
+   - TTL: 8 hours.
+   - Stored in `localStorage` on the frontend.
+2. **AppSession (Local Interaction Session)**:
+   - Created for specific screens (neuro_artist, neurobox, video_magic).
+   - TTL: Drops after 2 minutes of no heartbeat.
+   - Stored in `sessionStorage` on the frontend.
+   - *Rule*: If an AppSession times out, cancel its associated background tasks and delete its temp folder.
+
+## 5. Code Quality & Formatting
+- **Python**: Strict type hints (PEP 484), absolute imports, modular structure (routers, models, core, services).
+- **React**: Clear separation of concerns. Keep components small. Use custom hooks for complex logic (e.g., polling for task status).
+- **Comments/Docs**: Write clean, self-documenting code. Use comments to explain *why*, not *what*.
+- Always handle errors gracefully (e.g., network drops to the Gemini API) and provide fallback UI states.

@@ -19,7 +19,7 @@ export const AGENCY = {
     { value: "150 000+", label: "довольных гостей" },
     { value: "3 года", label: "на рынке туристических услуг" },
   ],
-  interactives: ["Нейрохудожник", "Нейробокс"] as const,
+  interactives: ["ИИ-творец", "Нейростилист"] as const,
   guidesHighlight: "Гиды — молодые жители города",
 } as const;
 
