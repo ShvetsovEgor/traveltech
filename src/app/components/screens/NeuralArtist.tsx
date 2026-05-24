@@ -46,7 +46,7 @@ const artistStyles = [
   {
     id: "kandinsky",
     name: "Кандинский",
-    coverSrc: "/static/artists/kandinsky.webp",
+    coverSrc: "/static/artists/kandinsky.jpg",
     description: "Абстракция",
   },
   {

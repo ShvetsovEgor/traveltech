@@ -2,17 +2,20 @@ import { useEffect, useRef, useState } from "react";
 import { QRCodeSVG } from "qrcode.react";
 import { cn } from "@heroui/react";
 
-/** Доля стороны изображения под QR (код + белая подложка). */
+/** Доля ширины изображения под QR (код + белая подложка). */
 const QR_RATIO = 0.2;
+
 type MediaWithQrOverlayProps = {
   url: string;
   alt: string;
   className?: string;
   mediaClassName?: string;
   variant?: "image" | "video";
+  /** Не влияет на размер; оставлен для совместимости вызовов. */
+  fallbackAspectRatio?: number;
 };
 
-/** Итоговое медиа: 70vh, 1:1 для фото; QR — 20% от стороны изображения. */
+/** Итоговое медиа с QR; фото показывается целиком, рамка по его реальным размерам. */
 export function MediaWithQrOverlay({
   url,
   alt,
@@ -29,15 +32,17 @@ export function MediaWithQrOverlay({
     if (!el) return;
 
     const update = () => {
-      const side = el.offsetWidth;
-      setQrPixelSize(Math.max(32, Math.round(side * QR_RATIO)));
+      const reference = isImage
+        ? el.offsetWidth
+        : Math.min(el.offsetWidth, el.offsetHeight);
+      setQrPixelSize(Math.max(32, Math.round(reference * QR_RATIO)));
     };
 
     update();
     const ro = new ResizeObserver(update);
     ro.observe(el);
     return () => ro.disconnect();
-  }, [variant]);
+  }, [variant, url]);
 
   const qrCodeSize = Math.max(24, qrPixelSize - 8);
 
@@ -48,26 +53,30 @@ export function MediaWithQrOverlay({
         className={cn(
           "relative overflow-visible",
           isImage
-            ? "aspect-square w-[80%] md:w-[min(70vh,100%)]"
-            : "aspect-video w-[80%] md:h-[70vh] md:max-h-[70vh] md:w-auto md:max-w-full"
+            ? "inline-block max-w-[85vw]"
+            : "mx-auto aspect-video w-[80%] max-h-[70vh] md:h-[70vh] md:w-auto md:max-w-full"
         )}
       >
-        <div className="absolute inset-0 overflow-hidden rounded-2xl bg-black shadow-md">
-          {isImage ? (
-            <img
-              src={url}
-              alt={alt}
-              className={cn("h-full w-full object-cover", mediaClassName)}
-            />
-          ) : (
+        {isImage ? (
+          <img
+            src={url}
+            alt={alt}
+            className={cn(
+              "block max-h-[70vh] w-auto max-w-full rounded-2xl bg-black shadow-md",
+              mediaClassName
+            )}
+            draggable={false}
+          />
+        ) : (
+          <div className="overflow-hidden rounded-2xl bg-black shadow-md">
             <video
               src={url}
               controls
               playsInline
-              className={cn("h-full w-full", mediaClassName)}
+              className={cn("h-full w-full max-h-[70vh]", mediaClassName)}
             />
-          )}
-        </div>
+          </div>
+        )}
 
         {qrPixelSize > 0 && (
           <div

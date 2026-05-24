@@ -287,7 +287,11 @@ export function NeuralBoxPhoto() {
       ) : (
         <div className="flex flex-col items-center gap-3">
           {displayUrl && (
-            <MediaWithQrOverlay url={displayUrl} alt="Результат" />
+            <MediaWithQrOverlay
+              url={displayUrl}
+              alt="Результат"
+              fallbackAspectRatio={cameraLayout.photoAspectRatio}
+            />
           )}
           <Typography.Paragraph className="text-center text-sm text-muted-foreground">
             Отсканируйте QR-код в углу фото
