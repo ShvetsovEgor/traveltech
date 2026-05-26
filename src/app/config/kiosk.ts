@@ -5,6 +5,7 @@ export const KIOSK_DISPLAY_NAMES: Record<KioskId, string> = {
   Popova: "Попова",
   Lobachevsky: "Лобачевского",
   robot: "Робот",
+  Rameeva: "ИТ-парк Рамеева",
 };
 
 export type InteractiveItem = {

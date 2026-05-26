@@ -1,4 +1,4 @@
-export type KioskId = "Popova" | "Lobachevsky" | "robot";
+export type KioskId = "Popova" | "Lobachevsky" | "robot" | "Rameeva";
 
 export type AppType = "neuro_artist" | "neurobox" | "video_magic";
 

@@ -5,6 +5,7 @@ class KioskId(StrEnum):
     POPOVA = "Popova"
     LOBACHEVSKY = "Lobachevsky"
     ROBOT = "robot"
+    RAMEEVA = "Rameeva"
 
 
 class AppType(StrEnum):

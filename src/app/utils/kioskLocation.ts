@@ -1,14 +1,14 @@
 import type { KioskId } from "../api/types";
 
-const VALID: KioskId[] = ["Popova", "Lobachevsky", "robot"];
+const VALID: KioskId[] = ["Popova", "Lobachevsky", "robot", "Rameeva"];
 
 export function parseKioskId(value: string | null | undefined): KioskId | null {
   if (!value) return null;
+  if (value === "robot") return "robot";
   const normalized =
     value.charAt(0).toUpperCase() + value.slice(1).toLowerCase();
   if (normalized === "Robot") return "robot";
   if (VALID.includes(normalized as KioskId)) return normalized as KioskId;
-  if (value === "robot") return "robot";
   return null;
 }
 

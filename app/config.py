@@ -41,6 +41,7 @@ class Settings(BaseSettings):
     kiosk_pin_popova: str = "1234"
     kiosk_pin_lobachevsky: str = "5678"
     kiosk_pin_robot: str = "9012"
+    kiosk_pin_rameeva: str = "3456"
 
     # Paths
     upload_base_dir: str = "/tmp/uploads"

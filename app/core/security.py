@@ -84,6 +84,7 @@ class SecurityService:
             KioskId.POPOVA: self.settings.kiosk_pin_popova,
             KioskId.LOBACHEVSKY: self.settings.kiosk_pin_lobachevsky,
             KioskId.ROBOT: self.settings.kiosk_pin_robot,
+            KioskId.RAMEEVA: self.settings.kiosk_pin_rameeva,
         }
         return mapping[kiosk_id]
 

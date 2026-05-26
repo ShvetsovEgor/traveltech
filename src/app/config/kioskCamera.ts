@@ -25,8 +25,8 @@ const DEFAULT_LAYOUT: KioskCameraLayout = {
     "mx-auto mb-4 aspect-[4/3] w-full max-w-xs overflow-hidden p-0 bg-black sm:max-w-sm",
 };
 
-/** Камера на киоске Попова: поворот +90° по часовой, снимок 9:16. */
-const POPOVA_LAYOUT: KioskCameraLayout = {
+/** Попова, Рамеева: камера смонтирована с поворотом, снимок 9:16, +90° по часовой. */
+const PORTRAIT_KIOSK_LAYOUT: KioskCameraLayout = {
   rotationCw: 90,
   photoAspectRatio: 9 / 16,
   frameClassName:
@@ -38,7 +38,9 @@ const POPOVA_LAYOUT: KioskCameraLayout = {
     "mx-auto mb-4 aspect-[9/16] w-full max-w-xs overflow-hidden p-0 bg-black sm:max-w-sm",
 };
 
+const PORTRAIT_KIOSK_IDS: KioskId[] = ["Popova", "Rameeva"];
+
 export function getKioskCameraLayout(kioskId: KioskId | null): KioskCameraLayout {
-  if (kioskId === "Popova") return POPOVA_LAYOUT;
+  if (kioskId && PORTRAIT_KIOSK_IDS.includes(kioskId)) return PORTRAIT_KIOSK_LAYOUT;
   return DEFAULT_LAYOUT;
 }
