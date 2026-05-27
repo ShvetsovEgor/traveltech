@@ -6,6 +6,7 @@ import type {
   KioskStatusResponse,
   LoginResponse,
   TaskStatusResponse,
+  DashboardResponse,
 } from "./types";
 import { buildApiUrl } from "./resolveApiBase";
 
@@ -124,6 +125,10 @@ export const api = {
 
   getTaskStatus(taskId: string) {
     return request<TaskStatusResponse>(`/api/tasks/${taskId}/status`);
+  },
+
+  getDashboard() {
+    return request<DashboardResponse>("/api/dashboard");
   },
 };
 
