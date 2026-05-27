@@ -1,5 +1,7 @@
 from fastapi import APIRouter, Query
 
+from app.config import get_settings
+from app.core.app_events_log import append_app_event
 from app.dependencies import DbSession, SecurityDep
 from app.models.enums import KioskId
 from app.models.pydantic_schemas import (
@@ -35,6 +37,14 @@ async def login(
     db: DbSession,
 ) -> LoginResponse:
     auth = await security.login(body.pin, body.kiosk_id)
+    append_app_event(
+        log_path=get_settings().app_events_log_path,
+        event_type="kiosk_login",
+        payload={
+            "kiosk_id": body.kiosk_id.value,
+            "expires_at_msk": auth.expires_at_msk,
+        },
+    )
     await write_audit(
         db,
         "kiosk_login",
@@ -55,6 +65,13 @@ async def logout(
     db: DbSession,
 ) -> LogoutResponse:
     kiosk_id = await security.logout_kiosk(body.kiosk_token)
+    append_app_event(
+        log_path=get_settings().app_events_log_path,
+        event_type="kiosk_logout",
+        payload={
+            "kiosk_id": kiosk_id.value,
+        },
+    )
     await write_audit(
         db,
         "kiosk_logout",

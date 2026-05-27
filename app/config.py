@@ -53,6 +53,7 @@ class Settings(BaseSettings):
 
     log_level: Literal["DEBUG", "INFO", "WARNING", "ERROR"] = "INFO"
     generation_log_path: str = "data/generations.log"
+    app_events_log_path: str = "data/app_events.jsonl"
 
     # AI prompts catalog (JSON). Keys must match UI option labels in option_map.
     prompts_file: str = "prompts/prompts.json"

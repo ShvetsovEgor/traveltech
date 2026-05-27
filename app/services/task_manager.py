@@ -16,6 +16,7 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.config import get_settings
+from app.core.app_events_log import append_app_event
 from app.core.generation_log import append_generation_log
 from app.core.storage import cleanup_upload_file, result_path, result_url
 from app.core.timezone import msk_iso, now_msk
@@ -71,6 +72,16 @@ class TaskManager:
                 "updated_at_msk": msk_iso(now),
             },
         )
+        append_app_event(
+            log_path=get_settings().app_events_log_path,
+            event_type="generation_status",
+            payload={
+                "task_id": task_id,
+                "interaction_token": interaction_token,
+                "app_type": app_type.value,
+                "status": TaskStatus.PROCESSING.value,
+            },
+        )
         return task_id
 
     async def get_task_status(self, task_id: str) -> dict[str, Any] | None:
@@ -120,6 +131,29 @@ class TaskManager:
                     media_type=media_type,
                     app_type=record.app_type,
                     task_id=task_id,
+                )
+                append_app_event(
+                    log_path=settings.app_events_log_path,
+                    event_type="generation_status",
+                    payload={
+                        "task_id": task_id,
+                        "interaction_token": record.interaction_token,
+                        "app_type": record.app_type,
+                        "media_type": media_type,
+                        "status": status.value,
+                    },
+                )
+            elif status in (TaskStatus.FAILED, TaskStatus.CANCELLED):
+                append_app_event(
+                    log_path=get_settings().app_events_log_path,
+                    event_type="generation_status",
+                    payload={
+                        "task_id": task_id,
+                        "interaction_token": record.interaction_token,
+                        "app_type": record.app_type,
+                        "status": status.value,
+                        "error_message": error_message or "",
+                    },
                 )
 
         ext = Path(result_path_value).suffix if result_path_value else ".jpeg"

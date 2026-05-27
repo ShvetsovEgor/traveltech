@@ -7,6 +7,7 @@ Run: uvicorn app.main:app --host 127.0.0.1 --port 8000 --reload
 from __future__ import annotations
 
 import asyncio
+import json
 import logging
 from contextlib import asynccontextmanager
 from datetime import datetime
@@ -22,7 +23,7 @@ from app.core.prompt_loader import load_prompts_catalog, prompts_file_path
 from app.core.security import SecurityService
 from app.models.enums import KioskId
 from app.database import init_db
-from app.dependencies import get_security, init_dependencies, shutdown_dependencies
+from app.dependencies import init_dependencies, shutdown_dependencies
 from app.routers import api_router
 from app.services.redis_client import RedisStore
 from app.services.session_cleanup import session_cleanup_loop
@@ -30,49 +31,47 @@ from app.services.session_cleanup import session_cleanup_loop
 logger = logging.getLogger(__name__)
 
 
-def _read_generation_dashboard(log_path: str) -> dict[str, Any]:
+def _read_app_events(log_path: str) -> list[dict[str, Any]]:
+    path = Path(log_path)
+    if not path.exists():
+        return []
+    events: list[dict[str, Any]] = []
+    try:
+        for raw in path.read_text(encoding="utf-8").splitlines():
+            if not raw.strip():
+                continue
+            try:
+                item = json.loads(raw)
+            except json.JSONDecodeError:
+                continue
+            if isinstance(item, dict):
+                events.append(item)
+    except OSError:
+        logger.exception("Failed to read app events log from %s", path)
+        return []
+    return events
+
+
+def _read_generation_dashboard(events: list[dict[str, Any]]) -> dict[str, Any]:
     """
     Parse append-only generation log (TSV) and return aggregates.
     Format: <ts>\ttype=<photo|video>\tapp=<...>\ttask_id=<...>
     """
-    path = Path(log_path)
-    if not path.exists():
-        return {
-            "total": 0,
-            "photo": 0,
-            "video": 0,
-            "last_events": [],
-        }
-
     photo = 0
     video = 0
     last_events: list[dict[str, str]] = []
     by_hour: dict[str, dict[str, int]] = {}
     by_day: dict[str, dict[str, int]] = {}
-
-    try:
-        lines = path.read_text(encoding="utf-8").splitlines()
-    except OSError:
-        logger.exception("Failed to read generation log from %s", path)
-        return {
-            "total": 0,
-            "photo": 0,
-            "video": 0,
-            "last_events": [],
-        }
-
-    for raw in lines:
-        parts = raw.split("\t")
-        if len(parts) < 4:
+    for event in events:
+        if event.get("event_type") != "generation_status":
             continue
-        at_msk = parts[0]
-        kv: dict[str, str] = {}
-        for item in parts[1:]:
-            if "=" in item:
-                key, value = item.split("=", 1)
-                kv[key] = value
-
-        media_type = kv.get("type")
+        payload = event.get("payload") or {}
+        if not isinstance(payload, dict):
+            continue
+        if payload.get("status") != "completed":
+            continue
+        at_msk = str(event.get("at_msk", ""))
+        media_type = str(payload.get("media_type", ""))
         if media_type == "photo":
             photo += 1
         elif media_type == "video":
@@ -102,8 +101,8 @@ def _read_generation_dashboard(log_path: str) -> dict[str, Any]:
             {
                 "at_msk": at_msk,
                 "type": media_type or "",
-                "app_type": kv.get("app", ""),
-                "task_id": kv.get("task_id", ""),
+                "app_type": str(payload.get("app_type", "")),
+                "task_id": str(payload.get("task_id", "")),
             }
         )
 
@@ -124,6 +123,40 @@ def _read_generation_dashboard(log_path: str) -> dict[str, Any]:
             ],
         },
     }
+
+
+def _build_kiosk_dashboard_from_events(events: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    states: dict[str, dict[str, Any]] = {
+        kiosk_id.value: {
+            "kiosk_id": kiosk_id.value,
+            "status": "Waiting",
+            "active": False,
+            "expires_at_msk": None,
+            "last_event_at_msk": None,
+        }
+        for kiosk_id in KioskId
+    }
+
+    for event in events:
+        event_type = event.get("event_type")
+        payload = event.get("payload") or {}
+        if event_type not in ("kiosk_login", "kiosk_logout") or not isinstance(payload, dict):
+            continue
+        kiosk_id = str(payload.get("kiosk_id", ""))
+        if kiosk_id not in states:
+            continue
+        state = states[kiosk_id]
+        state["last_event_at_msk"] = event.get("at_msk")
+        if event_type == "kiosk_login":
+            state["status"] = "Active"
+            state["active"] = True
+            state["expires_at_msk"] = payload.get("expires_at_msk")
+        else:
+            state["status"] = "Waiting"
+            state["active"] = False
+            state["expires_at_msk"] = None
+
+    return list(states.values())
 
 
 @asynccontextmanager
@@ -208,20 +241,10 @@ def create_app() -> FastAPI:
     async def dashboard_payload() -> dict[str, Any]:
         from app.core.timezone import msk_iso, now_msk
 
-        security = get_security()
-        kiosks: list[dict[str, str | bool | None]] = []
-        for kiosk_id in KioskId:
-            slot = await security.get_kiosk_slot_status(kiosk_id)
-            kiosks.append(
-                {
-                    "kiosk_id": kiosk_id.value,
-                    "status": "Active" if slot.get("active") else "Waiting",
-                    "active": bool(slot.get("active")),
-                    "expires_at_msk": slot.get("expires_at_msk"),
-                }
-            )
-
-        generations = _read_generation_dashboard(get_settings().generation_log_path)
+        settings = get_settings()
+        events = _read_app_events(settings.app_events_log_path)
+        generations = _read_generation_dashboard(events)
+        kiosks = _build_kiosk_dashboard_from_events(events)
 
         return {
             "status": "Live",
