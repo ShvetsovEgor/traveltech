@@ -19,6 +19,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 
 from app.config import get_settings
+from app.core.storage import result_url
 from app.core.prompt_loader import load_prompts_catalog, prompts_file_path
 from app.core.security import SecurityService
 from app.models.enums import KioskId
@@ -60,6 +61,7 @@ def _read_generation_dashboard(events: list[dict[str, Any]]) -> dict[str, Any]:
     photo = 0
     video = 0
     last_events: list[dict[str, str]] = []
+    recent_media: list[dict[str, str]] = []
     by_hour: dict[str, dict[str, int]] = {}
     by_day: dict[str, dict[str, int]] = {}
     for event in events:
@@ -97,20 +99,26 @@ def _read_generation_dashboard(events: list[dict[str, Any]]) -> dict[str, Any]:
             day_bucket[media_type] += 1
             day_bucket["total"] += 1
 
-        last_events.append(
-            {
-                "at_msk": at_msk,
-                "type": media_type or "",
-                "app_type": str(payload.get("app_type", "")),
-                "task_id": str(payload.get("task_id", "")),
-            }
-        )
+        task_id = str(payload.get("task_id", ""))
+        ext = ".mp4" if media_type == "video" else ".jpeg"
+        media_url = result_url(task_id, ext) if task_id else ""
+
+        entry = {
+            "at_msk": at_msk,
+            "type": media_type or "",
+            "app_type": str(payload.get("app_type", "")),
+            "task_id": task_id,
+            "result_url": media_url,
+        }
+        last_events.append(entry)
+        recent_media.append(entry)
 
     return {
         "total": photo + video,
         "photo": photo,
         "video": video,
         "last_events": last_events[-10:],
+        "recent_media": list(reversed(recent_media[-24:])),
         "series": {
             # 48 hourly points and 30 daily points for charts.
             "by_hour": [

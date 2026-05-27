@@ -49,16 +49,20 @@ export interface DashboardSeriesPointDay {
   total: number;
 }
 
+export interface DashboardMediaItem {
+  at_msk: string;
+  type: "photo" | "video" | string;
+  app_type: AppType | string;
+  task_id: string;
+  result_url: string;
+}
+
 export interface GenerationDashboard {
   total: number;
   photo: number;
   video: number;
-  last_events: Array<{
-    at_msk: string;
-    type: string;
-    app_type: string;
-    task_id: string;
-  }>;
+  last_events: DashboardMediaItem[];
+  recent_media: DashboardMediaItem[];
   series: {
     by_hour: DashboardSeriesPointHour[];
     by_day: DashboardSeriesPointDay[];
