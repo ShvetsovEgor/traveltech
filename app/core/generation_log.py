@@ -17,9 +17,14 @@ def append_generation_log(
     media_type: str,
     app_type: str,
     task_id: str,
+    agency_id: str,
+    agency_label: str,
 ) -> None:
-    """Write one tab-separated line: time, type, app, task_id."""
-    line = f"{at_msk}\ttype={media_type}\tapp={app_type}\ttask_id={task_id}\n"
+    """Write one tab-separated line: time, type, app, agency, task_id."""
+    line = (
+        f"{at_msk}\ttype={media_type}\tapp={app_type}\t"
+        f"agency_id={agency_id}\tagency={agency_label}\ttask_id={task_id}\n"
+    )
     path = Path(log_path)
     try:
         path.parent.mkdir(parents=True, exist_ok=True)

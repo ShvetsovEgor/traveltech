@@ -158,5 +158,28 @@
         "Станция": "inside a futuristic space station"
       }
     }
-  }
+  },
+  "sticker_emotions": {
+    "joy": {
+      "label": "Радость",
+      "emoji": "😀",
+      "base": "Create a portrait sticker of the person from the input photo with a bright joyful happy expression, warm big smile, lively eyes. Soft stylized sticker portrait: clearly recognizable face from the photo, gentle illustration touch with smooth shapes and slightly softened features, clean sticker edges, simple solid background. Preserve face shape and identity. NOT hyper-realistic photo, NOT full cartoon, NOT anime."
+    },
+    "anger": {
+      "label": "Гнев",
+      "emoji": "😠",
+      "base": "Create a portrait sticker of the person from the input photo with an angry frustrated expression, furrowed brows, intense eyes. Soft stylized sticker portrait: clearly recognizable face from the photo, gentle illustration touch with smooth shapes and slightly softened features, clean sticker edges, simple solid background. Preserve face shape and identity. NOT hyper-realistic photo, NOT full cartoon, NOT anime."
+    },
+    "surprise": {
+      "label": "Удивление",
+      "emoji": "😲",
+      "base": "Create a portrait sticker of the person from the input photo with a surprised shocked expression, wide open eyes and mouth. Soft stylized sticker portrait: clearly recognizable face from the photo, gentle illustration touch with smooth shapes and slightly softened features, clean sticker edges, simple solid background. Preserve face shape and identity. NOT hyper-realistic photo, NOT full cartoon, NOT anime."
+    },
+    "calm": {
+      "label": "Спокойствие",
+      "emoji": "😌",
+      "base": "Create a portrait sticker of the person from the input photo with a calm peaceful relaxed expression, soft gentle smile, serene eyes. Soft stylized sticker portrait: clearly recognizable face from the photo, gentle illustration touch with smooth shapes and slightly softened features, clean sticker edges, simple solid background. Preserve face shape and identity. NOT hyper-realistic photo, NOT full cartoon, NOT anime."
+    }
+  },
+  "sticker_grid": "Create ONE square image arranged as a perfect 2x2 grid: four equal panels in two rows and two columns, no gaps, borders, labels or text between panels. The same person from the input photo appears in every panel with soft stylized sticker portrait style: clearly recognizable facial features, gentle illustration touch, smooth shapes, slightly softened skin, clean sticker edges, simple solid background, preserved face shape and identity. NOT hyper-realistic photo, NOT full cartoon, NOT anime. Top-left panel: bright joyful happy expression with warm big smile and lively eyes. Top-right panel: angry frustrated expression with furrowed brows and intense eyes. Bottom-left panel: surprised shocked expression with wide open eyes and mouth. Bottom-right panel: calm peaceful relaxed expression with soft gentle smile and serene eyes. Each panel is a centered portrait bust. The layout must be exactly four equal quadrants suitable for programmatic cropping."
 }

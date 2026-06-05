@@ -99,6 +99,42 @@ class PromptEngine:
         return " ".join(parts)
 
     @staticmethod
+    def list_sticker_emotions() -> list[tuple[str, str, str]]:
+        """(emotion_id, label, emoji) in catalog order."""
+        catalog = PromptEngine._catalog()
+        emotions: dict[str, Any] = catalog.get("sticker_emotions", {})
+        return [
+            (
+                emotion_id,
+                str(cfg.get("label", emotion_id)),
+                str(cfg.get("emoji", "🙂")),
+            )
+            for emotion_id, cfg in emotions.items()
+        ]
+
+    @staticmethod
+    def build_sticker_emotion_prompt(emotion_id: str) -> str:
+        catalog = PromptEngine._catalog()
+        emotions: dict[str, Any] = catalog.get("sticker_emotions", {})
+        cfg = emotions.get(emotion_id)
+        if not cfg:
+            available = ", ".join(sorted(emotions))
+            raise ValueError(
+                f"Unknown sticker emotion_id: {emotion_id}. Available: {available}"
+            )
+        parts = [cfg["base"], catalog["technical"]["portrait"]]
+        return " ".join(parts)
+
+    @staticmethod
+    def build_sticker_grid_prompt() -> str:
+        """Один запрос: 2x2 сетка эмоций, затем нарезка на стикеры."""
+        catalog = PromptEngine._catalog()
+        grid = catalog.get("sticker_grid")
+        if not grid:
+            raise ValueError("sticker_grid prompt is missing from prompts catalog")
+        return f"{grid} {catalog['technical']['portrait']}"
+
+    @staticmethod
     def build_video_prompt(
         scenario_id: str,
         options: list[str] | None = None,
@@ -141,4 +177,8 @@ class PromptEngine:
             if not scenario_id:
                 raise ValueError("scenario_id is required for video_magic")
             return cls.build_video_prompt(scenario_id, options)
+        if app_type == AppType.STICKER_PACK:
+            if not style_id:
+                raise ValueError("emotion_id is required for sticker_pack")
+            return cls.build_sticker_emotion_prompt(style_id)
         raise ValueError(f"Unsupported app_type: {app_type}")

@@ -18,7 +18,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 
-from app.config import get_settings
+from app.config import _ENV_FILE, get_settings
 from app.core.storage import result_url
 from app.core.prompt_loader import load_prompts_catalog, prompts_file_path
 from app.core.security import SecurityService
@@ -56,7 +56,7 @@ def _read_app_events(log_path: str) -> list[dict[str, Any]]:
 def _read_generation_dashboard(events: list[dict[str, Any]]) -> dict[str, Any]:
     """
     Parse append-only generation log (TSV) and return aggregates.
-    Format: <ts>\ttype=<photo|video>\tapp=<...>\ttask_id=<...>
+    Format: <ts>\ttype=<photo|video>\tapp=<...>\tagency_id=<...>\tagency=<...>\ttask_id=<...>
     """
     photo = 0
     video = 0
@@ -109,6 +109,8 @@ def _read_generation_dashboard(events: list[dict[str, Any]]) -> dict[str, Any]:
             "app_type": str(payload.get("app_type", "")),
             "task_id": task_id,
             "result_url": media_url,
+            "agency_id": str(payload.get("agency_id", "")),
+            "agency": str(payload.get("agency", "")),
         }
         last_events.append(entry)
         recent_media.append(entry)
@@ -192,6 +194,17 @@ async def lifespan(app: FastAPI):
         prompts_file_path(),
         ", ".join(sorted(catalog["neurobox_styles"])),
     )
+    if settings.telegram_sticker_configured:
+        logger.info(
+            "Telegram sticker pack: configured (owner_id=%s)",
+            settings.telegram_sticker_owner_id,
+        )
+    else:
+        logger.warning(
+            "Telegram sticker pack: NOT configured "
+            "(set TELEGRAM_BOT_TOKEN and TELEGRAM_STICKER_OWNER_ID in %s)",
+            _ENV_FILE,
+        )
     yield
 
     stop_event.set()

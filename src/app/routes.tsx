@@ -12,6 +12,7 @@ import { NeuralBoxPhoto } from "./components/screens/NeuralBoxPhoto";
 import { VideoAnimation } from "./components/screens/VideoAnimation";
 import { VideoAnimationScenario } from "./components/screens/VideoAnimationScenario";
 import { MiniGames } from "./components/screens/MiniGames";
+import { StickerPackPhoto } from "./components/screens/StickerPackPhoto";
 import { GenerationsDashboard } from "./components/screens/GenerationsDashboard";
 
 export const router = createBrowserRouter([
@@ -31,6 +32,7 @@ export const router = createBrowserRouter([
       { path: "neural-box/photo", Component: NeuralBoxPhoto },
       { path: "video-animation", Component: VideoAnimation },
       { path: "video-animation/scenario", Component: VideoAnimationScenario },
+      { path: "sticker-pack", Component: StickerPackPhoto },
       { path: "mini-games", Component: MiniGames },
       { path: "dashboard", Component: GenerationsDashboard },
     ],

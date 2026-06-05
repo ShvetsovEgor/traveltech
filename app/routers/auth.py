@@ -36,12 +36,13 @@ async def login(
     security: SecurityDep,
     db: DbSession,
 ) -> LoginResponse:
-    auth = await security.login(body.pin, body.kiosk_id)
+    auth = await security.login(body.pin, body.kiosk_id, body.agency_id)
     append_app_event(
         log_path=get_settings().app_events_log_path,
         event_type="kiosk_login",
         payload={
             "kiosk_id": body.kiosk_id.value,
+            "agency_id": body.agency_id.value,
             "expires_at_msk": auth.expires_at_msk,
         },
     )
@@ -49,7 +50,7 @@ async def login(
         db,
         "kiosk_login",
         kiosk_id=body.kiosk_id.value,
-        message=f"Kiosk auth until {auth.expires_at_msk}",
+        message=f"Agency {body.agency_id.value}, auth until {auth.expires_at_msk}",
     )
     return LoginResponse(
         kiosk_token=auth.kiosk_token,

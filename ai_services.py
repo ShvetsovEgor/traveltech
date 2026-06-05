@@ -52,14 +52,56 @@ def _prepare_video_image(input_image_path: str) -> tuple[bytes, str]:
     return buf.getvalue(), "image/jpeg"
 
 
+def _success_ready_prefix(agency_label: str | None = None) -> str:
+    if agency_label:
+        return f"✅ Готово! {agency_label}. "
+    return "✅ Готово! "
+
+
 def _is_retriable_error(exc: BaseException) -> bool:
     if isinstance(exc, _NETWORK_ERRORS):
         return True
     msg = str(exc).lower()
     return any(
         token in msg
-        for token in ("ssl", "eof", "connection", "timeout", "network", "reset")
+        for token in (
+            "ssl",
+            "eof",
+            "connection",
+            "timeout",
+            "network",
+            "reset",
+            # Временные ошибки Gemini / Google API
+            "503",
+            "502",
+            "504",
+            "500",
+            "429",
+            "unavailable",
+            "high demand",
+            "rate limit",
+            "resource exhausted",
+            "overloaded",
+            "internal error",
+        )
     )
+
+
+def _retry_wait_seconds(attempt: int) -> int:
+    """Экспоненциальная пауза: 5, 10, 15, 20, 25 с…"""
+    return 5 * (attempt + 1)
+
+
+def _retry_reason(exc: BaseException) -> str:
+    if isinstance(exc, _NETWORK_ERRORS):
+        return "Сетевой сбой"
+    msg = str(exc).lower()
+    if any(
+        token in msg
+        for token in ("503", "unavailable", "high demand", "429", "overloaded")
+    ):
+        return "Сервис Gemini перегружен"
+    return "Временная ошибка API"
 
 
 def generate_stylized_image(
@@ -68,6 +110,7 @@ def generate_stylized_image(
     output_image_path: str = "stylized_artwork.jpeg",
     model_name: str = "gemini-2.5-flash-image",
     max_retries: int = 5,
+    agency_label: str | None = None,
 ) -> bool:
     """
     Генерирует стилизованное изображение на основе наброска/фото и промпта.
@@ -94,14 +137,17 @@ def generate_stylized_image(
             with open(output_image_path, "wb") as f:
                 f.write(response.parts[0].inline_data.data)
 
-            print(f"✅ Готово! Картина сохранена как {output_image_path}")
+            print(
+                f"{_success_ready_prefix(agency_label)}"
+                f"Картина сохранена как {output_image_path}"
+            )
             return True
 
         except Exception as e:
             if _is_retriable_error(e) and attempt < max_retries - 1:
-                wait = 5 * (attempt + 1)
+                wait = _retry_wait_seconds(attempt)
                 print(
-                    f"⚠️ Сетевой сбой (попытка {attempt + 1}/{max_retries}): {e}. "
+                    f"⚠️ {_retry_reason(e)} (попытка {attempt + 1}/{max_retries}): {e}. "
                     f"Повтор через {wait} с..."
                 )
                 time.sleep(wait)
@@ -140,7 +186,8 @@ def generate_video_from_image(
     prompt: str, 
     output_video_path: str = "generated_video.mp4",
     model_name: str = "veo-3.1-lite-generate-preview",
-    max_start_retries: int = 5
+    max_start_retries: int = 5,
+    agency_label: str | None = None,
 ) -> tuple[bool, str | None]:
     """
     Оживляет фотографию на основе промпта.
@@ -191,11 +238,13 @@ def generate_video_from_image(
             
         except Exception as e:
             if _is_retriable_error(e) and attempt < max_start_retries - 1:
+                wait = _retry_wait_seconds(attempt)
                 print(
-                    f"⚠️ Обрыв связи при загрузке "
-                    f"(попытка {attempt + 1}/{max_start_retries}): {e}"
+                    f"⚠️ {_retry_reason(e)} при загрузке "
+                    f"(попытка {attempt + 1}/{max_start_retries}): {e}. "
+                    f"Повтор через {wait} с..."
                 )
-                time.sleep(5 * (attempt + 1))
+                time.sleep(wait)
                 continue
             print(f"❌ Критическая ошибка при запуске: {e}")
             return False, f"Ошибка запуска Veo: {e}"
@@ -226,7 +275,10 @@ def generate_video_from_image(
             return False, "Veo не вернул видео в ответе"
         generated = operation.response.generated_videos[0]
         _save_generated_video_file(generated, output_video_path)
-        print(f"✅ Готово! Видео сохранено как {output_video_path}")
+        print(
+            f"{_success_ready_prefix(agency_label)}"
+            f"Видео сохранено как {output_video_path}"
+        )
         return True, None
     except Exception as e:
         print(f"❌ Ошибка при скачивании или сохранении: {e}")

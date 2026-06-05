@@ -13,8 +13,9 @@ from typing import Any
 from fastapi import HTTPException, status
 
 from app.config import Settings, get_settings
+from app.core.kiosk_pins import kiosk_pin_for
 from app.core.timezone import add_hours_msk, add_seconds_msk, is_expired, msk_iso, now_msk, to_msk
-from app.models.enums import AppType, KioskId
+from app.models.enums import AppType, GuideAgency, KioskId
 from app.services.redis_client import RedisStore
 
 
@@ -27,20 +28,28 @@ class KioskAuth:
     kiosk_token: str
     kiosk_id: KioskId
     expires_at_msk: str  # ISO in MSK
+    agency_id: GuideAgency = GuideAgency.TRAVELTECH
 
     def to_dict(self) -> dict[str, Any]:
         return {
             "kiosk_token": self.kiosk_token,
             "kiosk_id": self.kiosk_id.value,
             "expires_at_msk": self.expires_at_msk,
+            "agency_id": self.agency_id.value,
         }
 
     @classmethod
     def from_dict(cls, data: dict[str, Any]) -> KioskAuth:
+        raw_agency = data.get("agency_id")
+        try:
+            agency_id = GuideAgency(raw_agency) if raw_agency else GuideAgency.TRAVELTECH
+        except ValueError:
+            agency_id = GuideAgency.TRAVELTECH
         return cls(
             kiosk_token=data["kiosk_token"],
             kiosk_id=KioskId(data["kiosk_id"]),
             expires_at_msk=data["expires_at_msk"],
+            agency_id=agency_id,
         )
 
 
@@ -79,20 +88,19 @@ class SecurityService:
         self.redis = redis
         self.settings = settings or get_settings()
 
-    def _pin_for_kiosk(self, kiosk_id: KioskId) -> str:
-        mapping = {
-            KioskId.POPOVA: self.settings.kiosk_pin_popova,
-            KioskId.LOBACHEVSKY: self.settings.kiosk_pin_lobachevsky,
-            KioskId.ROBOT: self.settings.kiosk_pin_robot,
-            KioskId.RAMEEVA: self.settings.kiosk_pin_rameeva,
-        }
-        return mapping[kiosk_id]
+    def _pin_for_kiosk(self, kiosk_id: KioskId, agency: GuideAgency) -> str:
+        return kiosk_pin_for(self.settings, agency, kiosk_id)
 
-    async def login(self, pin: str, kiosk_id: KioskId) -> KioskAuth:
-        if pin != self._pin_for_kiosk(kiosk_id):
+    async def login(
+        self,
+        pin: str,
+        kiosk_id: KioskId,
+        agency: GuideAgency = GuideAgency.TRAVELTECH,
+    ) -> KioskAuth:
+        if pin != self._pin_for_kiosk(kiosk_id, agency):
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,
-                detail="Invalid PIN for this kiosk",
+                detail="Invalid PIN for this kiosk and agency",
             )
         kiosk_token = _token()
         expires = add_hours_msk(self.settings.kiosk_token_ttl_hours)
@@ -100,6 +108,7 @@ class SecurityService:
             kiosk_token=kiosk_token,
             kiosk_id=kiosk_id,
             expires_at_msk=msk_iso(expires),
+            agency_id=agency,
         )
         ttl_seconds = int(self.settings.kiosk_token_ttl_hours * 3600)
         await self.redis.set_json(
@@ -132,6 +141,7 @@ class SecurityService:
             "kiosk_id": auth.kiosk_id.value,
             "kiosk_token": auth.kiosk_token,
             "expires_at_msk": auth.expires_at_msk,
+            "agency_id": auth.agency_id.value,
         }
 
     async def logout_kiosk(self, kiosk_token: str) -> KioskId:

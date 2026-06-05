@@ -13,8 +13,14 @@ def parse_log_file(filename='app.log'):
     videos = []  # список для хранения времени создания видео
 
     # Регулярные выражения для поиска
-    photo_pattern = r'(\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d+)Z ✅ Готово! Картина сохранена как static/results/(\w+)\.jpeg'
-    video_pattern = r'(\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d+)Z ✅ Готово! Видео сохранено как static/results/(\w+)\.mp4'
+    photo_pattern = (
+        r'(\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d+)Z ✅ Готово! '
+        r'(?:[^.]+\. )?Картина сохранена как static/results/(\w+)\.jpeg'
+    )
+    video_pattern = (
+        r'(\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d+)Z ✅ Готово! '
+        r'(?:[^.]+\. )?Видео сохранено как static/results/(\w+)\.mp4'
+    )
 
     try:
         with open(filename, 'r', encoding='utf-8') as file:

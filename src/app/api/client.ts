@@ -1,6 +1,7 @@
 import type {
   AppType,
   GenerateTaskResponse,
+  GuideAgencyId,
   InteractionStartResponse,
   KioskId,
   KioskStatusResponse,
@@ -9,6 +10,13 @@ import type {
   DashboardResponse,
 } from "./types";
 import { buildApiUrl } from "./resolveApiBase";
+
+let kioskUnauthorizedHandler: (() => void) | null = null;
+
+/** Сброс kiosk_token в React-состоянии при 401 (см. KioskProvider). */
+export function setKioskUnauthorizedHandler(handler: (() => void) | null) {
+  kioskUnauthorizedHandler = handler;
+}
 
 async function request<T>(
   path: string,
@@ -26,8 +34,9 @@ async function request<T>(
     } catch {
       /* ignore */
     }
-    if (res.status === 401) {
+    if (res.status === 401 && path !== "/api/auth/login") {
       sessionStorage.removeItem("traveltech_kiosk_token");
+      kioskUnauthorizedHandler?.();
     }
     throw new Error(typeof detail === "string" ? detail : "Request failed");
   }
@@ -35,11 +44,11 @@ async function request<T>(
 }
 
 export const api = {
-  login(pin: string, kioskId: KioskId) {
+  login(pin: string, kioskId: KioskId, agencyId: GuideAgencyId = "traveltech") {
     return request<LoginResponse>("/api/auth/login", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ pin, kiosk_id: kioskId }),
+      body: JSON.stringify({ pin, kiosk_id: kioskId, agency_id: agencyId }),
     });
   },
 
@@ -101,6 +110,16 @@ export const api = {
     form.append("options", JSON.stringify(options));
     if (gender) form.append("gender", gender);
     return request<GenerateTaskResponse>("/api/neurobox/generate", {
+      method: "POST",
+      body: form,
+    });
+  },
+
+  stickerPackGenerate(photo: File, interactionToken: string) {
+    const form = new FormData();
+    form.append("photo", photo);
+    form.append("interaction_token", interactionToken);
+    return request<GenerateTaskResponse>("/api/sticker-pack/generate", {
       method: "POST",
       body: form,
     });

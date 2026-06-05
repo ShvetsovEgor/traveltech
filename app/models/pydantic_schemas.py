@@ -1,6 +1,6 @@
 from pydantic import BaseModel, Field
 
-from app.models.enums import AppType, KioskId, TaskStatus
+from app.models.enums import AppType, GuideAgency, KioskId, TaskStatus
 
 
 # --- Auth & sessions ---
@@ -9,6 +9,7 @@ from app.models.enums import AppType, KioskId, TaskStatus
 class LoginRequest(BaseModel):
     pin: str = Field(..., min_length=4, max_length=12)
     kiosk_id: KioskId
+    agency_id: GuideAgency = GuideAgency.TRAVELTECH
 
 
 class LoginResponse(BaseModel):
@@ -60,9 +61,20 @@ class GenerateTaskResponse(BaseModel):
     task_id: str
 
 
+class StickerPreviewItem(BaseModel):
+    emotion_id: str
+    label: str
+    emoji: str
+    url: str
+
+
 class TaskStatusResponse(BaseModel):
     task_id: str
     status: TaskStatus
     result_url: str | None = None
     error_message: str | None = None
     updated_at_msk: str | None = None
+    sticker_pack_url: str | None = None
+    sticker_previews: list[StickerPreviewItem] | None = None
+    sticker_progress: int | None = None
+    sticker_total: int | None = None

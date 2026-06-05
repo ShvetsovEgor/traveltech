@@ -1,15 +1,11 @@
-import { useCallback, useMemo } from "react";
+import { useMemo } from "react";
 import { useSearchParams } from "react-router";
 import { QRCodeSVG } from "qrcode.react";
 import { MapPin } from "lucide-react";
 import { Card, Chip, Typography, cn } from "@heroui/react";
-import {
-  useKiosk,
-  useKioskActivationPoll,
-} from "../../context/KioskContext";
+import { useKiosk } from "../../context/KioskContext";
 import { KIOSK_DISPLAY_NAMES } from "../../config/kiosk";
 import { buildGuideAuthUrl, getKioskIdFromSearch } from "../../utils/kioskLocation";
-import type { KioskId } from "../../api/types";
 import { KioskScreen } from "../kiosk";
 
 type GuideKioskQrScreenProps = {
@@ -18,7 +14,7 @@ type GuideKioskQrScreenProps = {
 
 export function GuideKioskQrScreen({ onScreenTap }: GuideKioskQrScreenProps) {
   const [searchParams] = useSearchParams();
-  const { kioskId, applyRemoteAuth } = useKiosk();
+  const { kioskId } = useKiosk();
 
   const effectiveKioskId = useMemo(
     () => getKioskIdFromSearch(searchParams.toString()) ?? kioskId,
@@ -28,19 +24,6 @@ export function GuideKioskQrScreen({ onScreenTap }: GuideKioskQrScreenProps) {
   const authQrUrl = useMemo(
     () => (effectiveKioskId ? buildGuideAuthUrl(effectiveKioskId) : ""),
     [effectiveKioskId]
-  );
-
-  const handleActivated = useCallback(
-    (token: string, id: KioskId) => {
-      applyRemoteAuth(token, id);
-    },
-    [applyRemoteAuth]
-  );
-
-  useKioskActivationPoll(
-    effectiveKioskId,
-    Boolean(effectiveKioskId),
-    handleActivated
   );
 
   if (!effectiveKioskId) {

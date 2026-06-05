@@ -4,11 +4,12 @@ import {
   useContext,
   useEffect,
   useMemo,
+  useRef,
   useState,
   type ReactNode,
 } from "react";
-import { api } from "../api/client";
-import type { AppType, KioskId } from "../api/types";
+import { api, setKioskUnauthorizedHandler } from "../api/client";
+import type { AppType, GuideAgencyId, KioskId } from "../api/types";
 import { getKioskIdFromSearch, parseKioskId } from "../utils/kioskLocation";
 
 const KIOSK_TOKEN_KEY = "traveltech_kiosk_token";
@@ -17,6 +18,13 @@ const HEARTBEAT_MS = 30_000;
 const STATUS_POLL_MS = 2_000;
 
 const ENV_KIOSK_ID = parseKioskId(import.meta.env.VITE_KIOSK_ID as string | undefined);
+
+function isGuideAuthPath(): boolean {
+  return (
+    typeof window !== "undefined" &&
+    window.location.pathname.includes("/guide/auth")
+  );
+}
 
 function resolveInitialKioskId(): KioskId | null {
   if (typeof window === "undefined") return ENV_KIOSK_ID;
@@ -36,7 +44,8 @@ type KioskContextValue = {
   interactionToken: string | null;
   appType: AppType | null;
   isAuthenticated: boolean;
-  login: (pin: string, kioskId: KioskId) => Promise<void>;
+  authBootstrapped: boolean;
+  login: (pin: string, kioskId: KioskId, agencyId?: GuideAgencyId) => Promise<void>;
   applyRemoteAuth: (token: string, id: KioskId) => void;
   logout: () => Promise<void>;
   ensureInteraction: (appType: AppType) => Promise<string>;
@@ -47,13 +56,19 @@ const KioskContext = createContext<KioskContextValue | null>(null);
 
 export function KioskProvider({ children }: { children: ReactNode }) {
   const [kioskId, setKioskId] = useState<KioskId | null>(resolveInitialKioskId);
-  const [kioskToken, setKioskToken] = useState<string | null>(() => {
-    const stored = sessionStorage.getItem(KIOSK_TOKEN_KEY);
-    const id = resolveInitialKioskId();
-    return stored && id ? stored : null;
-  });
+  const [kioskToken, setKioskToken] = useState<string | null>(null);
+  const [authBootstrapped, setAuthBootstrapped] = useState(false);
   const [interactionToken, setInteractionToken] = useState<string | null>(null);
   const [appType, setAppType] = useState<AppType | null>(null);
+  const bootstrapGenRef = useRef(0);
+
+  const clearKioskAuth = useCallback(() => {
+    setKioskToken(null);
+    setInteractionToken(null);
+    setAppType(null);
+    sessionStorage.removeItem(KIOSK_TOKEN_KEY);
+    sessionStorage.removeItem("traveltech_guide_auth_success");
+  }, []);
 
   const applyRemoteAuth = useCallback((token: string, id: KioskId) => {
     setKioskToken(token);
@@ -65,8 +80,8 @@ export function KioskProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const login = useCallback(
-    async (pin: string, id: KioskId) => {
-      const res = await api.login(pin, id);
+    async (pin: string, id: KioskId, agencyId: GuideAgencyId = "traveltech") => {
+      const res = await api.login(pin, id, agencyId);
       applyRemoteAuth(res.kiosk_token, res.kiosk_id);
     },
     [applyRemoteAuth]
@@ -81,11 +96,8 @@ export function KioskProvider({ children }: { children: ReactNode }) {
         /* clear local state even if backend is unreachable */
       }
     }
-    setKioskToken(null);
-    setInteractionToken(null);
-    setAppType(null);
-    sessionStorage.removeItem(KIOSK_TOKEN_KEY);
-  }, [kioskToken]);
+    clearKioskAuth();
+  }, [kioskToken, clearKioskAuth]);
 
   const ensureInteraction = useCallback(
     async (type: AppType) => {
@@ -110,6 +122,11 @@ export function KioskProvider({ children }: { children: ReactNode }) {
   }, []);
 
   useEffect(() => {
+    setKioskUnauthorizedHandler(clearKioskAuth);
+    return () => setKioskUnauthorizedHandler(null);
+  }, [clearKioskAuth]);
+
+  useEffect(() => {
     const onUrlChange = () => {
       const fromUrl = getKioskIdFromSearch(window.location.search);
       if (fromUrl) setKioskId(fromUrl);
@@ -117,6 +134,47 @@ export function KioskProvider({ children }: { children: ReactNode }) {
     window.addEventListener("popstate", onUrlChange);
     return () => window.removeEventListener("popstate", onUrlChange);
   }, []);
+
+  useEffect(() => {
+    if (!kioskId) {
+      setAuthBootstrapped(true);
+      return;
+    }
+
+    const generation = ++bootstrapGenRef.current;
+    let cancelled = false;
+
+    const bootstrapAuth = async () => {
+      try {
+        const status = await api.getKioskStatus(kioskId);
+        if (cancelled || generation !== bootstrapGenRef.current) return;
+
+        if (status.active && status.kiosk_token) {
+          applyRemoteAuth(status.kiosk_token, status.kiosk_id);
+        } else if (!isGuideAuthPath()) {
+          clearKioskAuth();
+        }
+      } catch {
+        if (cancelled || generation !== bootstrapGenRef.current) return;
+        if (isGuideAuthPath()) return;
+
+        const stored = sessionStorage.getItem(KIOSK_TOKEN_KEY);
+        if (stored) {
+          setKioskToken(stored);
+        }
+      } finally {
+        if (!cancelled && generation === bootstrapGenRef.current) {
+          setAuthBootstrapped(true);
+        }
+      }
+    };
+
+    void bootstrapAuth();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [kioskId, applyRemoteAuth, clearKioskAuth]);
 
   useEffect(() => {
     if (!interactionToken) return;
@@ -135,6 +193,7 @@ export function KioskProvider({ children }: { children: ReactNode }) {
       interactionToken,
       appType,
       isAuthenticated: Boolean(kioskToken),
+      authBootstrapped,
       login,
       applyRemoteAuth,
       logout,
@@ -146,6 +205,7 @@ export function KioskProvider({ children }: { children: ReactNode }) {
       kioskId,
       interactionToken,
       appType,
+      authBootstrapped,
       login,
       applyRemoteAuth,
       logout,
@@ -154,7 +214,25 @@ export function KioskProvider({ children }: { children: ReactNode }) {
     ]
   );
 
-  return <KioskContext.Provider value={value}>{children}</KioskContext.Provider>;
+  return (
+    <KioskContext.Provider value={value}>
+      <KioskActivationWatcher />
+      {children}
+    </KioskContext.Provider>
+  );
+}
+
+/** Ожидание входа гида: poll слота киоска, пока не авторизованы. */
+function KioskActivationWatcher() {
+  const { kioskId, kioskToken, authBootstrapped, applyRemoteAuth } = useKiosk();
+
+  useKioskActivationPoll(
+    kioskId,
+    authBootstrapped && !kioskToken,
+    applyRemoteAuth
+  );
+
+  return null;
 }
 
 export function useKiosk() {
@@ -163,7 +241,7 @@ export function useKiosk() {
   return ctx;
 }
 
-/** Polling активации киоска (экран с QR). */
+/** Polling активации киоска (слот на бэкенде после PIN гида). */
 export function useKioskActivationPoll(
   kioskId: KioskId | null,
   enabled: boolean,

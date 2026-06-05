@@ -50,6 +50,20 @@ def result_url(task_id: str, extension: str) -> str:
     return f"{settings.public_base_url.rstrip('/')}{settings.static_url_prefix}/{filename}"
 
 
+def sticker_preview_path(task_id: str, emotion_id: str) -> Path:
+    folder = results_dir() / task_id
+    folder.mkdir(parents=True, exist_ok=True)
+    return folder / f"{emotion_id}.webp"
+
+
+def sticker_preview_url(task_id: str, emotion_id: str) -> str:
+    settings = get_settings()
+    return (
+        f"{settings.public_base_url.rstrip('/')}"
+        f"{settings.static_url_prefix}/{task_id}/{emotion_id}.webp"
+    )
+
+
 def cleanup_upload_dir(interaction_token: str) -> None:
     path = Path(get_settings().upload_base_dir) / interaction_token
     if path.exists():

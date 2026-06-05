@@ -33,6 +33,15 @@ async def get_task_status(
         from app.core.storage import result_url
         from app.core.timezone import msk_iso
 
+        if record.status == TaskStatus.PROCESSING.value:
+            # Живой прогресс хранится в Redis; без записи задача «зависла» (reload и т.п.).
+            return TaskStatusResponse(
+                task_id=task_id,
+                status=TaskStatus.FAILED,
+                error_message="Генерация прервана. Начните заново.",
+                updated_at_msk=msk_iso(record.updated_at_msk),
+            )
+
         url = None
         if record.status == TaskStatus.COMPLETED.value and record.result_path:
             from pathlib import Path
@@ -52,4 +61,8 @@ async def get_task_status(
         result_url=state.get("result_url"),
         error_message=state.get("error_message"),
         updated_at_msk=state.get("updated_at_msk"),
+        sticker_pack_url=state.get("sticker_pack_url"),
+        sticker_previews=state.get("sticker_previews"),
+        sticker_progress=state.get("sticker_progress"),
+        sticker_total=state.get("sticker_total"),
     )

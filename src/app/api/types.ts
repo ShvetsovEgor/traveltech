@@ -1,6 +1,8 @@
 export type KioskId = "Popova" | "Lobachevsky" | "robot" | "Rameeva";
 
-export type AppType = "neuro_artist" | "neurobox" | "video_magic";
+export type GuideAgencyId = "traveltech" | "umatour" | "innotravel";
+
+export type AppType = "neuro_artist" | "neurobox" | "video_magic" | "sticker_pack";
 
 export type TaskStatus = "processing" | "completed" | "failed" | "cancelled";
 
@@ -27,12 +29,23 @@ export interface GenerateTaskResponse {
   task_id: string;
 }
 
+export interface StickerPreviewItem {
+  emotion_id: string;
+  label: string;
+  emoji: string;
+  url: string;
+}
+
 export interface TaskStatusResponse {
   task_id: string;
   status: TaskStatus;
   result_url: string | null;
   error_message: string | null;
   updated_at_msk: string | null;
+  sticker_pack_url?: string | null;
+  sticker_previews?: StickerPreviewItem[] | null;
+  sticker_progress?: number | null;
+  sticker_total?: number | null;
 }
 
 export interface DashboardSeriesPointHour {

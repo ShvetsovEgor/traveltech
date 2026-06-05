@@ -1,13 +1,17 @@
 from functools import lru_cache
+from pathlib import Path
 from typing import Literal
 
 from pydantic import Field
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
+_PROJECT_ROOT = Path(__file__).resolve().parent.parent
+_ENV_FILE = _PROJECT_ROOT / ".env"
+
 
 class Settings(BaseSettings):
     model_config = SettingsConfigDict(
-        env_file=".env",
+        env_file=str(_ENV_FILE),
         env_file_encoding="utf-8",
         extra="ignore",
     )
@@ -37,11 +41,23 @@ class Settings(BaseSettings):
     interaction_heartbeat_timeout_seconds: int = 120
     session_cleanup_interval_seconds: int = 30
 
-    # PIN codes per kiosk (override via env: KIOSK_PIN_POPOVA=1234)
+    # PIN codes per kiosk — Технологии путешествий (override: KIOSK_PIN_POPOVA=1234)
     kiosk_pin_popova: str = "1234"
     kiosk_pin_lobachevsky: str = "5678"
     kiosk_pin_robot: str = "9012"
     kiosk_pin_rameeva: str = "3456"
+
+    # Уматур
+    kiosk_pin_umatour_popova: str = "7101"
+    kiosk_pin_umatour_lobachevsky: str = "7102"
+    kiosk_pin_umatour_robot: str = "7103"
+    kiosk_pin_umatour_rameeva: str = "7104"
+
+    # Иннотрэвел
+    kiosk_pin_innotravel_popova: str = "8101"
+    kiosk_pin_innotravel_lobachevsky: str = "8102"
+    kiosk_pin_innotravel_robot: str = "8103"
+    kiosk_pin_innotravel_rameeva: str = "8104"
 
     # Paths
     upload_base_dir: str = "/tmp/uploads"
@@ -57,6 +73,16 @@ class Settings(BaseSettings):
 
     # AI prompts catalog (JSON). Keys must match UI option labels in option_map.
     prompts_file: str = "prompts/prompts.json"
+
+    # Telegram sticker pack (sticker_pack flow)
+    telegram_bot_token: str = ""
+    telegram_sticker_owner_id: int = 0
+    telegram_bot_username: str = ""
+    telegram_sticker_pack_title: str = "TravelTech — эмоции"
+
+    @property
+    def telegram_sticker_configured(self) -> bool:
+        return bool(self.telegram_bot_token and self.telegram_sticker_owner_id)
 
 
 @lru_cache

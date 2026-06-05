@@ -1,5 +1,5 @@
 import type { AppType, KioskId } from "../api/types";
-import { Box, Gamepad2, Palette, Video, type LucideIcon } from "lucide-react";
+import { Box, Gamepad2, Palette, Smile, Video, type LucideIcon } from "lucide-react";
 
 export const KIOSK_DISPLAY_NAMES: Record<KioskId, string> = {
   Popova: "Попова",
@@ -37,6 +37,13 @@ export const INTERACTIVE_ITEMS: InteractiveItem[] = [
     icon: Video,
     path: "/video-animation",
     appType: "video_magic",
+  },
+  {
+    title: "Стикерпак",
+    description: "4 эмоции по вашему фото",
+    icon: Smile,
+    path: "/sticker-pack",
+    appType: "sticker_pack",
   },
   {
     title: "Мини-игры",
