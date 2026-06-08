@@ -202,8 +202,10 @@ async def lifespan(app: FastAPI):
     else:
         logger.warning(
             "Telegram sticker pack: NOT configured "
-            "(set TELEGRAM_BOT_TOKEN and TELEGRAM_STICKER_OWNER_ID in %s)",
-            _ENV_FILE,
+            "(set TELEGRAM_BOT_TOKEN and TELEGRAM_STICKER_OWNER_ID "
+            "environment variables; token_set=%s, owner_id=%s)",
+            bool(settings.telegram_bot_token),
+            settings.telegram_sticker_owner_id,
         )
     yield
 
@@ -285,10 +287,17 @@ def create_app() -> FastAPI:
         return await dashboard_payload()
 
     @app.get("/health")
-    async def health() -> dict[str, str]:
+    async def health() -> dict[str, str | bool | int]:
         from app.core.timezone import msk_iso, now_msk
 
-        return {"status": "ok", "server_time_msk": msk_iso(now_msk())}
+        settings = get_settings()
+        return {
+            "status": "ok",
+            "server_time_msk": msk_iso(now_msk()),
+            "telegram_sticker_configured": settings.telegram_sticker_configured,
+            "telegram_bot_token_set": bool(settings.telegram_bot_token),
+            "telegram_sticker_owner_id": settings.telegram_sticker_owner_id,
+        }
 
     return app
 
