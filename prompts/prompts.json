@@ -89,6 +89,9 @@
     },
     "barbie": {
       "base": "[FACE PRESERVE: strict] Use exact reference face. Do not replace with generic Barbie face. Only change outfit, hair styling, pose, and background to Barbie aesthetic. Generate a full-body image of a character dressed as Barbie (fashion doll aesthetic). Preserve the original face exactly as in the reference — do not alter facial features, expression, or identity. Costume: classic Barbie pink dress or pink outfit, blonde hair styled, high heels. Background: pastel pink dreamhouse or Malibu beach at sunset. Lighting: soft, even, high-key lighting, no harsh shadows, glossy and clean. Aspect ratio: 3:4. No face distortion, no plastic-looking artifacts unless intentional.",
+      "gender_bases": {
+        "male": "[FACE PRESERVE: strict] Use exact reference face. Do not replace with a generic Ken face. Generate a full-body image of Ken, Barbie's boyfriend and companion (classic Mattel Ken doll aesthetic). Preserve the original male face exactly from the reference — same facial features, expression, and identity. CRITICAL: male character only — NOT a woman, NOT Barbie with a man's face, NOT feminine body. Masculine Ken proportions and styling. Costume: fashionable tailored pink suit (pink blazer and matching trousers or coordinated pink outfit), polished shoes, confident charming pose. Background: pastel pink dreamhouse or Malibu beach at sunset in Barbie world. Lighting: soft, even, high-key lighting, glossy and clean. Aspect ratio: 3:4. No face distortion."
+      },
       "option_groups": {
         "style": {
           "Реалистик": "photorealistic, human-like texture, glossy makeup, natural skin pores, soft focus, high fashion magazine quality",

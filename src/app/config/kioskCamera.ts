@@ -30,12 +30,12 @@ const PORTRAIT_KIOSK_LAYOUT: KioskCameraLayout = {
   rotationCw: 90,
   photoAspectRatio: 9 / 16,
   frameClassName:
-    "relative aspect-[9/16] w-full max-w-sm max-h-[min(80vh,720px)] overflow-hidden p-0 bg-black",
+    "relative aspect-[9/16] w-full max-w-sm max-h-[min(80vh,720px)] overflow-hidden p-0 bg-neutral-900",
   videoClassName:
-    "absolute left-1/2 top-1/2 h-full w-full -translate-x-1/2 -translate-y-1/2 rotate-90 object-contain",
-  previewClassName: "h-full w-full object-contain",
+    "absolute left-1/2 top-1/2 min-h-full min-w-full -translate-x-1/2 -translate-y-1/2 rotate-90 object-cover",
+  previewClassName: "h-full w-full object-cover",
   compactFrameClassName:
-    "mx-auto mb-4 aspect-[9/16] w-full max-w-xs overflow-hidden p-0 bg-black sm:max-w-sm",
+    "mx-auto mb-4 aspect-[9/16] w-full max-w-xs overflow-hidden p-0 bg-neutral-900 sm:max-w-sm",
 };
 
 const PORTRAIT_KIOSK_IDS: KioskId[] = ["Popova", "Rameeva"];

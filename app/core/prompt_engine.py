@@ -92,9 +92,16 @@ class PromptEngine:
             mapped = PromptEngine._map_neurobox_options(cfg, options)
             if mapped:
                 parts.append(", ".join(mapped))
-        gender_prompts: dict[str, str] = catalog["gender"]
-        if gender and gender in gender_prompts:
-            parts.append(gender_prompts[gender])
+        gender_bases: dict[str, str] = cfg.get("gender_bases", {})
+        gender_prompts_style: dict[str, str] = cfg.get("gender_prompts", {})
+        global_gender: dict[str, str] = catalog["gender"]
+        if gender:
+            if gender in gender_bases:
+                parts[0] = gender_bases[gender]
+            if gender in gender_prompts_style:
+                parts.append(gender_prompts_style[gender])
+            elif gender not in gender_bases and gender in global_gender:
+                parts.append(global_gender[gender])
         parts.append(catalog["technical"]["portrait"])
         return " ".join(parts)
 
