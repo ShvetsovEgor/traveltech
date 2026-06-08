@@ -56,7 +56,7 @@ def _read_app_events(log_path: str) -> list[dict[str, Any]]:
 def _read_generation_dashboard(events: list[dict[str, Any]]) -> dict[str, Any]:
     """
     Parse append-only generation log (TSV) and return aggregates.
-    Format: <ts>\ttype=<photo|video>\tapp=<...>\tagency_id=<...>\tagency=<...>\ttask_id=<...>
+    Format: <ts>\ttype=<photo|video>\tapp=<...>\tagency_id=<...>\tagency=<...>\tstyle=<...>\ttask_id=<...>
     """
     photo = 0
     video = 0
@@ -111,6 +111,7 @@ def _read_generation_dashboard(events: list[dict[str, Any]]) -> dict[str, Any]:
             "result_url": media_url,
             "agency_id": str(payload.get("agency_id", "")),
             "agency": str(payload.get("agency", "")),
+            "style": str(payload.get("generation_style", "")),
         }
         last_events.append(entry)
         recent_media.append(entry)

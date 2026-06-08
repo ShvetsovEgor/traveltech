@@ -57,6 +57,7 @@ async def generate_neurobox(
         db,
         interaction_token=interaction_token,
         app_type=AppType.NEUROBOX,
+        generation_style=style_id,
     )
     await security.register_task_for_interaction(interaction_token, task_id)
     await write_audit(

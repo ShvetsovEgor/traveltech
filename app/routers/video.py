@@ -62,6 +62,7 @@ async def generate_video(
         db,
         interaction_token=interaction_token,
         app_type=AppType.VIDEO_MAGIC,
+        generation_style=scenario_id,
     )
     await security.register_task_for_interaction(interaction_token, task_id)
     await write_audit(

@@ -1,6 +1,7 @@
-import type { ReactNode, RefObject } from "react";
-import { Card } from "@heroui/react";
+import type { CSSProperties, ReactNode, RefObject } from "react";
+import { useEffect, useState } from "react";
 import type { KioskCameraLayout } from "../../config/kioskCamera";
+import { useVideoStreamAspect } from "../../hooks/useVideoStreamAspect";
 
 type KioskCameraViewportProps = {
   layout: KioskCameraLayout;
@@ -25,34 +26,62 @@ export function KioskCameraViewport({
   cameraErrorMessage = "Камера недоступна.",
   children,
 }: KioskCameraViewportProps) {
+  const streamAspect = useVideoStreamAspect(
+    videoRef,
+    layout.rotationCw,
+    showVideo && !cameraError
+  );
+
+  const [lockedAspect, setLockedAspect] = useState<number | null>(null);
+
+  useEffect(() => {
+    if (streamAspect) {
+      setLockedAspect(streamAspect);
+    }
+  }, [streamAspect]);
+
+  const frameAspect =
+    streamAspect ?? lockedAspect ?? layout.photoAspectRatio;
+
+  const frameStyle: CSSProperties = {
+    aspectRatio: frameAspect,
+    width: layout.frameWidth,
+    maxHeight: layout.frameMaxHeight,
+  };
+
   return (
-    <Card className={layout.frameClassName}>
-      {showVideo ? (
-        cameraError ? (
-          <div className="flex h-full w-full items-center justify-center p-8 text-center text-muted">
-            {cameraErrorMessage}
-          </div>
+    <div
+      className={layout.frameClassName}
+      style={frameStyle}
+    >
+      <div className="absolute inset-0 overflow-hidden">
+        {showVideo ? (
+          cameraError ? (
+            <div className="flex size-full items-center justify-center p-8 text-center text-muted">
+              {cameraErrorMessage}
+            </div>
+          ) : (
+            <video
+              ref={videoRef}
+              autoPlay
+              playsInline
+              muted
+              className={layout.videoClassName}
+            />
+          )
         ) : (
-          <video
-            ref={videoRef}
-            autoPlay
-            playsInline
-            muted
-            className={layout.videoClassName}
-          />
-        )
-      ) : (
-        showImage &&
-        imageSrc && (
-          <img
-            src={imageSrc}
-            alt={imageAlt}
-            className={layout.previewClassName}
-            draggable={false}
-          />
-        )
-      )}
+          showImage &&
+          imageSrc && (
+            <img
+              src={imageSrc}
+              alt={imageAlt}
+              className={layout.previewClassName}
+              draggable={false}
+            />
+          )
+        )}
+      </div>
       {children}
-    </Card>
+    </div>
   );
 }

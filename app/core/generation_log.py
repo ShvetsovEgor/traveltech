@@ -19,11 +19,14 @@ def append_generation_log(
     task_id: str,
     agency_id: str,
     agency_label: str,
+    style: str = "",
 ) -> None:
-    """Write one tab-separated line: time, type, app, agency, task_id."""
+    """Write one tab-separated line: time, type, app, agency, style, task_id."""
+    style_part = f"style={style}\t" if style else ""
     line = (
         f"{at_msk}\ttype={media_type}\tapp={app_type}\t"
-        f"agency_id={agency_id}\tagency={agency_label}\ttask_id={task_id}\n"
+        f"agency_id={agency_id}\tagency={agency_label}\t{style_part}"
+        f"task_id={task_id}\n"
     )
     path = Path(log_path)
     try:

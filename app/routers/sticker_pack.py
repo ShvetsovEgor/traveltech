@@ -60,6 +60,7 @@ async def generate_sticker_pack(
         db,
         interaction_token=interaction_token,
         app_type=AppType.STICKER_PACK,
+        generation_style="sticker_pack",
     )
     await security.register_task_for_interaction(interaction_token, task_id)
     await write_audit(

@@ -56,6 +56,7 @@ class TaskManager:
         *,
         interaction_token: str,
         app_type: AppType,
+        generation_style: str | None = None,
     ) -> str:
         task_id = uuid.uuid4().hex
         now = now_msk()
@@ -86,16 +87,21 @@ class TaskManager:
                     "sticker_previews": [],
                 }
             )
+        if generation_style:
+            state_payload["generation_style"] = generation_style
         await self._set_task_state(task_id, state_payload)
+        processing_payload: dict[str, Any] = {
+            "task_id": task_id,
+            "interaction_token": interaction_token,
+            "app_type": app_type.value,
+            "status": TaskStatus.PROCESSING.value,
+        }
+        if generation_style:
+            processing_payload["generation_style"] = generation_style
         append_app_event(
             log_path=get_settings().app_events_log_path,
             event_type="generation_status",
-            payload={
-                "task_id": task_id,
-                "interaction_token": interaction_token,
-                "app_type": app_type.value,
-                "status": TaskStatus.PROCESSING.value,
-            },
+            payload=processing_payload,
         )
         return task_id
 
@@ -122,6 +128,7 @@ class TaskManager:
         app_type: str,
         media_type: str,
         at_msk: str,
+        generation_style: str = "",
     ) -> None:
         agency_id, agency_label = await resolve_agency_for_interaction(
             self.redis,
@@ -136,6 +143,7 @@ class TaskManager:
             task_id=task_id,
             agency_id=agency_id,
             agency_label=agency_label,
+            style=generation_style,
         )
         append_app_event(
             log_path=settings.app_events_log_path,
@@ -148,12 +156,14 @@ class TaskManager:
                 "status": TaskStatus.COMPLETED.value,
                 "agency_id": agency_id,
                 "agency": agency_label,
+                "generation_style": generation_style,
             },
         )
         logger.info(
-            "Generation completed: type=%s app=%s agency=%s task_id=%s",
+            "Generation completed: type=%s app=%s style=%s agency=%s task_id=%s",
             media_type,
             app_type,
+            generation_style or "-",
             agency_label,
             task_id,
         )
@@ -183,12 +193,15 @@ class TaskManager:
             if status == TaskStatus.COMPLETED:
                 at = msk_iso(now)
                 media_type = _generation_media_type(record.app_type)
+                existing = await self.get_task_status(task_id)
+                generation_style = str((existing or {}).get("generation_style", ""))
                 await self._log_successful_generation(
                     task_id=task_id,
                     interaction_token=record.interaction_token,
                     app_type=record.app_type,
                     media_type=media_type,
                     at_msk=at,
+                    generation_style=generation_style,
                 )
             elif status in (TaskStatus.FAILED, TaskStatus.CANCELLED):
                 append_app_event(
@@ -221,6 +234,7 @@ class TaskManager:
                 "sticker_progress",
                 "sticker_total",
                 "sticker_pack_url",
+                "generation_style",
             ):
                 if key in existing:
                     state[key] = existing[key]
@@ -267,12 +281,15 @@ class TaskManager:
             record.result_path = result_path_value
             await db.commit()
             at = msk_iso(now)
+            existing = await self.get_task_status(task_id)
+            generation_style = str((existing or {}).get("generation_style", ""))
             await self._log_successful_generation(
                 task_id=task_id,
                 interaction_token=record.interaction_token,
                 app_type=record.app_type,
                 media_type="photo",
                 at_msk=at,
+                generation_style=generation_style,
             )
 
         state = {
@@ -289,6 +306,8 @@ class TaskManager:
         existing = await self.get_task_status(task_id)
         if existing:
             state["interaction_token"] = existing.get("interaction_token")
+            if existing.get("generation_style"):
+                state["generation_style"] = existing["generation_style"]
         await self._set_task_state(task_id, state)
         return state
 

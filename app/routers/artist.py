@@ -38,6 +38,7 @@ async def generate_artist(
         db,
         interaction_token=interaction_token,
         app_type=AppType.NEURO_ARTIST,
+        generation_style=style_id,
     )
     await security.register_task_for_interaction(interaction_token, task_id)
     await write_audit(
