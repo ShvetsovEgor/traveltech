@@ -48,13 +48,6 @@
     }
   },
   "neurobox_styles": {
-    "anime": {
-      "base": "Stylize the portrait as high-quality anime art.",
-      "option_map": {
-        "Яркие цвета": "vibrant saturated palette",
-        "Большие глаза": "large expressive anime eyes"
-      }
-    },
     "cyberpunk": {
       "base": "Stylize the portrait as cyberpunk futuristic character.",
       "option_map": {
@@ -88,23 +81,23 @@
       }
     },
     "barbie": {
-      "base": "[FACE PRESERVE: strict] Use exact reference face. Do not replace with generic Barbie face. Only change outfit, hair styling, pose, and background to Barbie aesthetic. Generate a full-body image of a character dressed as Barbie (fashion doll aesthetic). Preserve the original face exactly as in the reference — do not alter facial features, expression, or identity. Costume: classic Barbie pink dress or pink outfit, blonde hair styled, high heels. Background: pastel pink dreamhouse or Malibu beach at sunset. Lighting: soft, even, high-key lighting, no harsh shadows, glossy and clean. Aspect ratio: 3:4. No face distortion, no plastic-looking artifacts unless intentional.",
+      "base": "[FACE PRESERVE: strict] [HAIR PRESERVE: strict] Use the exact reference face, exact facial features, exact hairstyle, and exact hair color from the input photo. Do NOT replace with a generic Barbie face. Do NOT change hair color, hair length, hair texture, haircut, or hairstyle — keep the subject's original hair exactly as in the reference. Do NOT alter face shape, eye shape, nose, lips, eyebrows, skin tone, age, or identity. Only change outfit, pose, and background to Barbie aesthetic. Generate a full-body image of a character dressed as Barbie (fashion doll aesthetic). Costume: classic Barbie pink dress or pink outfit, high heels. Background: pastel pink dreamhouse or Malibu beach at sunset. Lighting: soft, even, high-key lighting, no harsh shadows, glossy and clean. Aspect ratio: 3:4. No face distortion, no hair recoloring, no generic doll face.",
       "gender_bases": {
-        "male": "[FACE PRESERVE: strict] Use exact reference face. Do not replace with a generic Ken face. Generate a full-body image of Ken, Barbie's boyfriend and companion (classic Mattel Ken doll aesthetic). Preserve the original male face exactly from the reference — same facial features, expression, and identity. CRITICAL: male character only — NOT a woman, NOT Barbie with a man's face, NOT feminine body. Masculine Ken proportions and styling. Costume: fashionable tailored pink suit (pink blazer and matching trousers or coordinated pink outfit), polished shoes, confident charming pose. Background: pastel pink dreamhouse or Malibu beach at sunset in Barbie world. Lighting: soft, even, high-key lighting, glossy and clean. Aspect ratio: 3:4. No face distortion."
+        "male": "[FACE PRESERVE: strict] [HAIR PRESERVE: strict] Use the exact reference male face, exact facial features, exact hairstyle, and exact hair color from the input photo. Do NOT replace with a generic Ken face. Do NOT change hair color, hair length, hair texture, haircut, or hairstyle — keep the subject's original hair exactly as in the reference. Generate a full-body image of Ken, Barbie's boyfriend and companion (classic Mattel Ken doll aesthetic). Preserve the original male face exactly from the reference — same facial features, expression, and identity. CRITICAL: male character only — NOT a woman, NOT Barbie with a man's face, NOT feminine body. Masculine Ken proportions and styling. Only outfit, pose, and background may change to Barbie world aesthetic. Costume: fashionable tailored pink suit (pink blazer and matching trousers or coordinated pink outfit), polished shoes, confident charming pose. Background: pastel pink dreamhouse or Malibu beach at sunset in Barbie world. Lighting: soft, even, high-key lighting, glossy and clean. Aspect ratio: 3:4. No face distortion, no hair recoloring."
       },
       "option_groups": {
         "style": {
-          "Реалистик": "photorealistic, human-like texture, glossy makeup, natural skin pores, soft focus, high fashion magazine quality",
-          "Семи-реалистик": "semi-realistic, rendered like a high-end CGI doll, smooth shading, idealized features, slightly stylized hair",
-          "Кукольный": "plastic doll aesthetic, visible seams on arms and legs, shiny vinyl skin, articulation joints, Mattel toy product shot",
-          "Кинематографичный": "cinematic lighting, pastel color palette, soft dreamy background, Margot Robbie Barbie movie aesthetic, slightly vintage tone"
+          "Реалистик": "photorealistic, human-like texture, glossy makeup, natural skin pores, soft focus, high fashion magazine quality, preserve exact face and hair from reference",
+          "Семи-реалистик": "semi-realistic, rendered like a high-end CGI doll, smooth shading, preserve exact facial features and original hairstyle and hair color from reference",
+          "Кукольный": "plastic doll aesthetic for body and outfit only, shiny vinyl skin on body, Mattel toy product shot, but face and hair must remain identical to the reference photo",
+          "Кинематографичный": "cinematic lighting, pastel color palette, soft dreamy background, Margot Robbie Barbie movie aesthetic, slightly vintage tone, preserve exact face and hair from reference"
         },
         "pose": {
-          "Классическая Барби": "one hand on hip, knees slightly bent, smiling at camera, weight on back leg, other arm relaxed",
-          "В машине": "sitting in pink convertible, hands on steering wheel, wind blowing hair back, laughing",
-          "На пляже": "standing on sand, holding a beach ball or sunglasses, one leg lifted slightly back, playful expression",
-          "Dreamhouse поза": "holding a tiny pink accessory (purse or comb), looking sideways, slightly tilted head, elegant and casual",
-          "Фотосессия / мода": "runway walk pose, one foot in front of the other, both hands on hips, chin slightly up, high fashion glare"
+          "Классическая Барби": "one hand on hip, knees slightly bent, smiling at camera, weight on back leg, other arm relaxed, original hairstyle unchanged",
+          "В машине": "sitting in pink convertible, hands on steering wheel, laughing, original hairstyle and hair color preserved",
+          "На пляже": "standing on sand, holding a beach ball or sunglasses, one leg lifted slightly back, playful expression, original hairstyle unchanged",
+          "Dreamhouse поза": "holding a tiny pink accessory (purse or comb), looking sideways, slightly tilted head, elegant and casual, original hairstyle unchanged",
+          "Фотосессия / мода": "runway walk pose, one foot in front of the other, both hands on hips, chin slightly up, high fashion glare, original hairstyle unchanged"
         }
       }
     },
