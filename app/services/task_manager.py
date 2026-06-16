@@ -319,6 +319,7 @@ class TaskManager:
         input_path: Path,
         prompt: str,
         db_factory,
+        fallback_prompt: str | None = None,
     ) -> None:
         asyncio.create_task(
             self._run_image_task(
@@ -326,6 +327,7 @@ class TaskManager:
                 interaction_token=interaction_token,
                 input_path=input_path,
                 prompt=prompt,
+                fallback_prompt=fallback_prompt,
                 db_factory=db_factory,
             )
         )
@@ -374,6 +376,7 @@ class TaskManager:
         input_path: Path,
         prompt: str,
         db_factory,
+        fallback_prompt: str | None = None,
     ) -> None:
         out = result_path(task_id, ".jpeg")
         _, agency_label = await resolve_agency_for_interaction(
@@ -384,13 +387,14 @@ class TaskManager:
             if await self.redis.is_cancelled(task_id):
                 return
             loop = asyncio.get_running_loop()
-            success = await loop.run_in_executor(
+            success, gen_error = await loop.run_in_executor(
                 _executor,
                 _call_generate_stylized_image,
                 str(input_path),
                 prompt,
                 str(out),
                 agency_label,
+                fallback_prompt,
             )
             if await self.redis.is_cancelled(task_id):
                 return
@@ -404,7 +408,7 @@ class TaskManager:
                         db,
                         task_id,
                         TaskStatus.FAILED,
-                        error_message="Image generation failed",
+                        error_message=gen_error or "Image generation failed",
                     )
         except Exception as exc:
             logger.exception("Image task %s failed", task_id)
@@ -490,7 +494,7 @@ class TaskManager:
 
             grid_out = task_folder / "grid.jpeg"
             grid_prompt = PromptEngine.build_sticker_grid_prompt()
-            success = await loop.run_in_executor(
+            success, gen_error = await loop.run_in_executor(
                 _executor,
                 _call_generate_stylized_image,
                 str(input_path),
@@ -504,7 +508,7 @@ class TaskManager:
                         db,
                         task_id,
                         TaskStatus.FAILED,
-                        error_message="Не удалось сгенерировать стикерпак",
+                        error_message=gen_error or "Не удалось сгенерировать стикерпак",
                     )
                 return
 
@@ -594,7 +598,8 @@ def _call_generate_stylized_image(
     prompt: str,
     output_image_path: str,
     agency_label: str,
-) -> bool:
+    fallback_prompt: str | None = None,
+) -> tuple[bool, str | None]:
     from ai_services import generate_stylized_image
 
     return generate_stylized_image(
@@ -602,6 +607,7 @@ def _call_generate_stylized_image(
         prompt=prompt,
         output_image_path=output_image_path,
         agency_label=agency_label,
+        fallback_prompt=fallback_prompt,
     )
 
 

@@ -5,7 +5,8 @@
     "portrait_cartoon": "bold 2D cartoon illustration, clean outlines, flat or cel-shaded colors, preserve recognizable identity from the reference photo translated into cartoon form — same hair color, skin tone, eye color, and distinctive features.",
     "portrait_harmonized": "unified photorealistic rendering across the entire figure, seamless face-to-neck-to-body integration, matching skin texture detail and lighting on face and body, preserve facial identity from the reference photo — same person, not a pasted low-quality camera cutout.",
     "portrait_doll": "Mattel fashion doll product photography, shiny plastic vinyl skin on face and entire body, molded doll features and painted doll makeup, preserve recognizable identity from the reference photo translated into Barbie/Ken doll form — same hair color and facial structure, NOT photorealistic, NOT pasted camera face.",
-    "portrait_cinematic": "Barbie 2023 movie film still, Greta Gerwig Barbieland live-action cinematic look, unified stylized rendering on face and body, hyper-saturated pastel film color grade, preserve facial identity from reference — seamless face-to-body integration, not pasted camera cutout.",
+    "portrait_cinematic": "live-action cinematic film still quality, unified movie-grade rendering on face and body, dramatic film lighting and color grade, preserve facial identity from reference — seamless face-to-body integration, not pasted low-quality camera cutout.",
+    "portrait_comic": "original comic book illustration style, bold ink outlines and cel-shaded colors on face and entire body, preserve recognizable identity from the reference — original fictional character only, not trademarked IP",
     "video": "cinematic 16:9, smooth motion, 8 seconds, high quality, natural movement.",
     "face_lock_tag": "[FACE LOCK: ON]"
   },
@@ -67,20 +68,39 @@
       }
     },
     "superhero": {
-      "base": "Generate a full-body image of a character dressed as Superman. Preserve the original face exactly as in the reference — do not alter facial features, expression, or identity. Costume: classic blue suit with red boots and yellow belt. Background: rooftop at sunset. Lighting: warm golden hour, soft rim light. Aspect ratio: 3:4. No distortions, no face merging, no artifacts.",
+      "base": "[IDENTITY PRESERVE] [HAIR PRESERVE: strict] [EXPRESSION PRESERVE: strict] Keep the subject recognizable from the input photo — preserve facial identity, ethnic appearance and skin tone, exact hairstyle, hair color, and exact facial expression/emotion from the reference. An ORIGINAL fictional superhero archetype is assigned below — put that original costume on this exact person. CRITICAL: create only original fictional heroes — do NOT depict, name, or imitate any existing copyrighted character from comics, films, or games (no Marvel, no DC, no Disney, no trademarked names or logos). Do NOT change ethnicity, hairstyle or impose a new facial expression. Aspect ratio: 3:4.",
+      "hero_roster": [
+        {"option_label": "Супермен", "label": "Sky Guardian", "gender": "any", "costume": "original blue and red hero suit with flowing cape, gold belt, unique abstract geometric chest emblem — inspired by classic flying hero archetype but fully original design, no letter S, no trademarked symbols", "background": "city rooftop at golden hour"},
+        {"option_label": "Человек-паук", "label": "Web Acrobat", "gender": "any", "costume": "original red and navy acrobatic hero suit with web-like line pattern and white eye lenses, unique spider-inspired abstract emblem — original design, not any existing character", "background": "skyscraper wall at dusk"},
+        {"option_label": "Халк", "label": "Green Titan", "gender": "any", "base_override": "[GREEN TITAN — BRAWLER ARCHETYPE] Original fantasy brute-hero photo edit. Transform into a MASSIVE emerald-green powerhouse: extremely wide shoulders, thick neck, huge arms and chest, bulky brawler proportions — NOT a lean bodybuilder, NOT a slim caped superhero. Unified emerald-green skin on face, neck and entire body, same green tone everywhere. Preserve recognizable facial features from the reference but on a larger heavier frame — still the same person. Messy dark hair. NO superhero costume pieces. Aspect ratio 3:4.", "costume": "ONLY torn dark-purple trousers ripped at the knees — bare emerald-green torso and arms fully visible. NO shirt, NO jacket, NO cape, NO belt, NO boots, NO armor, NO chest emblem, NO superhero suit of any kind.", "background": "urban rubble or impact crater with cracked pavement, dust and debris — brute-hero aftermath", "forbidden_elements": "FORBIDDEN for Green Titan: cape, belt, buckle, armor, superhero suit, chest emblem, flying hero silhouette, polished costume. This is a shirtless green brawler in torn pants only.", "transform_rules": "Visual reference: classic massive green brute-hero archetype — huge bulky body, torn purple pants, bare green chest, angry powerful energy. NOT Superman, NOT any caped hero.", "transform_technical": "Bulky Green Titan brawler proportions, unified emerald skin on face and body, torn purple pants only, zero costume accessories.", "style_overrides": {"Реалистик": "photorealistic Green Titan brawler — huge bulky emerald-green body, torn purple pants, bare green chest, NO cape NO belt, preserve face likeness from reference", "Семи-реалистик": "semi-realistic CGI Green Titan brawler — massive emerald body, torn purple pants, no costume accessories", "Комикс": "Green Titan comic brawler illustration — bulky green figure, torn purple pants, bold ink lines, NO cape", "Кинематографичный": "cinematic Green Titan brute-hero movie still — massive emerald body, torn purple pants, dramatic dust lighting, NO cape NO belt"}, "pose_overrides": {"Классическая героическая": "wide power stance, feet planted apart, fists clenched at sides, chest forward — massive green brawler, NO cape NO belt", "Полет": "heavy mid-air power leap, knees bent, arms forward — athletic jump NOT flying with cape", "Приземление": "heavy smashing landing, one fist impacts cracked ground, dust burst — NO cape", "Динамичный рывок": "charging brute sprint forward, ground cracking — NO cape NO suit", "Расслабленный герой": "confident brute stance, arms crossed over huge green chest — NO cape NO belt"}, "fallback_prompt": "[GREEN TITAN BRAWLER] Family-friendly fantasy portrait: person as massive emerald-green brute-hero, bulky wide body, torn dark-purple pants only, bare green chest, NO cape NO belt NO costume, preserve facial features from photo, cinematic dust lighting, aspect ratio 3:4."}
+      ],
+      "harmony_options": [
+        "Реалистик",
+        "Семи-реалистик"
+      ],
+      "harmony_technical": "MANDATORY face retouch and quality upgrade at studio resolution. Preserve facial identity, exact hairstyle, hair color, and expression from reference. Original fictional hero only — no copyrighted characters.",
+      "cinematic_options": [
+        "Кинематографичный"
+      ],
+      "cinematic_technical": "MANDATORY Hollywood face retouch at film resolution. Preserve identity, hairstyle, and expression. Original fictional superhero only.",
+      "comic_options": [
+        "Комикс"
+      ],
+      "cinematic_base": "Full-body original superhero blockbuster movie still — live-action cinematic quality, dramatic lighting, teal-orange color grade. Assigned original archetype below. NOT any existing movie character. NOT raw webcam photo.",
+      "comic_base": "Full-body original superhero comic book cover illustration on the ENTIRE figure including face — bold ink lines, cel-shaded colors, assigned original archetype below. NOT Marvel, NOT DC, NOT trademarked characters.",
       "option_groups": {
         "style": {
-          "Реалистик": "photorealistic, 8K, detailed skin texture, natural lighting, shot on 35mm film",
-          "Семи-реалистик": "semi-realistic, digital painting style, soft shading, slightly stylized but believable anatomy",
-          "Комикс": "comic book art style, bold black ink lines, cel-shaded, vibrant saturated colors, Marvel/DC style",
-          "Кинематографичный": "cinematic lighting, movie still, anamorphic lens, shallow depth of field, color graded teal-orange"
+          "Реалистик": "photorealistic full-body portrait as the assigned ORIGINAL superhero archetype. Preserve IDENTITY, exact hairstyle, hair color, and facial expression from reference — professional face retouch, NOT raw camera pixels. Unified 8K quality. Original fictional hero only.",
+          "Семи-реалистик": "semi-realistic CGI original superhero — face retouch, preserve hairstyle and expression from reference",
+          "Комикс": "[COMIC MODE] Original comic book superhero illustration — fully illustrated face and body, preserve features, hairstyle and expression from reference, NOT any copyrighted comic character",
+          "Кинематографичный": "[MOVIE STILL] Blockbuster cinematic frame of an ORIGINAL superhero — face retouch at movie resolution, preserve identity, hairstyle and expression, NOT any existing film character"
         },
         "pose": {
-          "Классическая героическая": "hands on hips, feet shoulder-width apart, cape fully spread",
-          "Полет": "flying pose diagonally upward, one fist forward, one arm back, cape trailing horizontally",
-          "Приземление": "one knee on ground, one fist pressed into concrete, head slightly lowered, dramatic impact",
-          "Динамичный рывок": "running forward at high speed, torso twisted, clenched fist, wind effect on suit",
-          "Расслабленный герой": "leaning against rooftop ledge, one hand in pocket, slight smirk, cape draped over shoulder"
+          "Классическая героическая": "heroic stance, hands on hips, feet shoulder-width apart, cape spread if applicable — preserve original hairstyle and facial expression from reference",
+          "Полет": "dynamic flying pose, one fist forward, cape trailing — preserve original hairstyle and facial expression from reference",
+          "Приземление": "landing impact pose, one knee down, fist to ground — preserve original hairstyle and facial expression from reference",
+          "Динамичный рывок": "running or rushing forward at speed, wind on suit — preserve original hairstyle and facial expression from reference",
+          "Расслабленный герой": "relaxed confident lean against ledge — preserve original hairstyle and facial expression from reference, do NOT change emotion"
         }
       }
     },

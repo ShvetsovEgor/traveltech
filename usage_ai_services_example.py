@@ -2,7 +2,7 @@ from ai_services import generate_stylized_image, generate_video_from_image
 
 # Пример 1: Вызов ИИ-творца/Нейростилиста
 pic_prompt = "A cinematic photorealistic portrait of a man in the style of Peaky Blinders..."
-is_pic_success = generate_stylized_image(
+is_pic_success, pic_error = generate_stylized_image(
     input_image_path="webcam_face.jpg",
     prompt=pic_prompt,
     output_image_path="static/results/user_123_pic.jpeg"
@@ -10,6 +10,8 @@ is_pic_success = generate_stylized_image(
 
 if is_pic_success:
     print("Отправляем ссылку на картинку пользователю!")
+elif pic_error:
+    print(pic_error)
 
 # Пример 2: Вызов Оживления видео
 vid_prompt = "[FACE LOCK: ON] The person from the input image stands behind wooden railings..."

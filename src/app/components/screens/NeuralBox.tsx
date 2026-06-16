@@ -46,6 +46,15 @@ const styles: NeuroStyle[] = [
     coverSrc: "/static/neuro_styles/superhero.png",
     optionGroups: [
       {
+        id: "hero",
+        label: "Герой",
+        options: [
+          "Супермен",
+          "Человек-паук",
+          "Халк",
+        ],
+      },
+      {
         id: "style",
         label: "Стиль",
         options: ["Реалистик", "Семи-реалистик", "Комикс", "Кинематографичный"],
@@ -108,6 +117,12 @@ const styles: NeuroStyle[] = [
   },
 ];
 
+function hasHeroSelected(style: NeuroStyle, selected: string[]): boolean {
+  const heroGroup = style.optionGroups?.find((g) => g.id === "hero");
+  if (!heroGroup) return true;
+  return selected.some((o) => heroGroup.options.includes(o));
+}
+
 function orderOptionsForStyle(style: NeuroStyle, selected: string[]): string[] {
   if (style.optionGroups) {
     return style.optionGroups.flatMap((group) =>
@@ -165,8 +180,12 @@ export function NeuralBox() {
     });
   };
 
+  const canContinue =
+    !activeStyle?.optionGroups?.some((g) => g.id === "hero") ||
+    hasHeroSelected(activeStyle, selectedOptions);
+
   const handleContinue = () => {
-    if (!activeStyleId || !activeStyle) return;
+    if (!activeStyleId || !activeStyle || !canContinue) return;
     navigate("/neural-box/gender", {
       state: {
         style: activeStyleId,
@@ -230,12 +249,14 @@ export function NeuralBox() {
                   {activeStyle.name}
                 </DialogTitle>
                 <DialogDescription className="text-base text-muted-foreground">
-                  {activeStyle.optionGroups?.length === 1 &&
-                  activeStyle.optionGroups[0].id === "face"
-                    ? "Выберите вариант лица"
-                    : activeStyle.optionGroups
-                      ? "Выберите стиль и позу"
-                      : "Добавьте опции к стилю"}
+                  {activeStyle.optionGroups?.some((g) => g.id === "hero")
+                    ? "Выберите героя, стиль и позу"
+                    : activeStyle.optionGroups?.length === 1 &&
+                        activeStyle.optionGroups[0].id === "face"
+                      ? "Выберите вариант лица"
+                      : activeStyle.optionGroups
+                        ? "Выберите стиль и позу"
+                        : "Добавьте опции к стилю"}
                 </DialogDescription>
               </DialogHeader>
 
@@ -289,6 +310,7 @@ export function NeuralBox() {
                   variant="primary"
                   size="lg"
                   className="w-full"
+                  isDisabled={!canContinue}
                   onPress={handleContinue}
                 >
                   Продолжить

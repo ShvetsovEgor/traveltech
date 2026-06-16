@@ -39,6 +39,9 @@ async def generate_neurobox(
         prompt = PromptEngine.build_neurobox_prompt(
             style_id, parsed_options, gender
         )
+        fallback_prompt = PromptEngine.build_neurobox_fallback_prompt(
+            style_id, parsed_options, gender
+        )
     except (ValueError, json.JSONDecodeError) as exc:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(exc)) from exc
 
@@ -65,7 +68,7 @@ async def generate_neurobox(
         "neurobox_generate",
         interaction_token=interaction_token,
         task_id=task_id,
-        message=f"style_id={style_id}, gender={gender}",
+        message=f"style_id={style_id}, gender={gender}, hero={PromptEngine.audit_hero_label(style_id, parsed_options)}",
     )
 
     factory = get_session_factory()
@@ -74,6 +77,7 @@ async def generate_neurobox(
         interaction_token=interaction_token,
         input_path=input_path,
         prompt=prompt,
+        fallback_prompt=fallback_prompt,
         db_factory=factory,
     )
     return GenerateTaskResponse(task_id=task_id)

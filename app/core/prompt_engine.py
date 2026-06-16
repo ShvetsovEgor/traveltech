@@ -6,6 +6,7 @@ Prompt Engine: [Базовый стиль] + [Опции из интерфейс
 
 from __future__ import annotations
 
+import random
 from typing import Any
 
 from app.core.prompt_loader import load_prompts_catalog
@@ -49,21 +50,123 @@ class PromptEngine:
         return catalog, cfg
 
     @staticmethod
-    def _map_neurobox_options(cfg: dict[str, Any], options: list[str]) -> list[str]:
+    def _find_selected_hero(
+        cfg: dict[str, Any],
+        options: list[str] | None,
+    ) -> dict[str, Any] | None:
+        roster: list[dict[str, Any]] = cfg.get("hero_roster") or []
+        if not options:
+            return None
+        selected = set(options)
+        for hero in roster:
+            opt = hero.get("option_label")
+            if opt and opt in selected:
+                return hero
+        return None
+
+    @staticmethod
+    def _map_neurobox_options(
+        cfg: dict[str, Any],
+        options: list[str],
+        hero: dict[str, Any] | None = None,
+    ) -> list[str]:
         """Resolve UI labels to prompt fragments (flat option_map or option_groups)."""
         option_map: dict[str, str] = cfg.get("option_map", {})
         groups: dict[str, dict[str, str]] = cfg.get("option_groups", {})
         lookup: dict[str, str] = {**option_map}
         for group in groups.values():
             lookup.update(group)
+        hero_style: dict[str, str] = (hero or {}).get("style_overrides") or {}
+        hero_pose: dict[str, str] = (hero or {}).get("pose_overrides") or {}
         seen: set[str] = set()
         mapped: list[str] = []
         for label in options:
-            fragment = lookup.get(label)
+            fragment = (
+                hero_style.get(label)
+                or hero_pose.get(label)
+                or lookup.get(label)
+            )
             if fragment and fragment not in seen:
                 seen.add(fragment)
                 mapped.append(fragment)
         return mapped
+
+    @staticmethod
+    def _hero_to_fragment(hero: dict[str, Any]) -> str:
+        label = str(hero.get("label", "Original Superhero"))
+        costume = str(hero.get("costume", ""))
+        background = str(hero.get("background", "epic city skyline"))
+        transform_rules = str(hero.get("transform_rules", "")).strip()
+        forbidden = str(hero.get("forbidden_elements", "")).strip()
+        suffix_parts = [p for p in (transform_rules, forbidden) if p]
+        suffix = f" {' '.join(suffix_parts)}" if suffix_parts else ""
+        return (
+            f"[ORIGINAL SUPERHERO: {label}] "
+            f"Create a fully ORIGINAL fictional superhero in the '{label}' visual archetype. "
+            f"Costume design: {costume}. Background: {background}. "
+            f"Do NOT depict, name, or copy any existing copyrighted character, trademark, "
+            f"franchise logo, or recognizable IP from Marvel, DC, Disney, or any film/comic. "
+            f"Use unique original emblems and silhouettes only.{suffix}"
+        )
+
+    @staticmethod
+    def audit_hero_label(style_id: str, options: list[str] | None) -> str | None:
+        try:
+            _, cfg = PromptEngine._style_cfg("neurobox_styles", style_id)
+        except ValueError:
+            return None
+        hero = PromptEngine._find_selected_hero(cfg, options)
+        if not hero:
+            return None
+        return str(hero.get("option_label") or hero.get("label"))
+
+    @staticmethod
+    def build_neurobox_fallback_prompt(
+        style_id: str,
+        options: list[str] | None = None,
+        gender: str | None = None,
+    ) -> str | None:
+        _, cfg = PromptEngine._style_cfg("neurobox_styles", style_id)
+        hero = PromptEngine._find_selected_hero(cfg, options)
+        if not hero:
+            return None
+        fallback = str(hero.get("fallback_prompt", "")).strip()
+        return fallback or None
+
+    @staticmethod
+    def _resolve_hero_fragment(
+        cfg: dict[str, Any],
+        gender: str | None,
+        options: list[str] | None,
+    ) -> str | None:
+        roster: list[dict[str, Any]] = cfg.get("hero_roster") or []
+        if not roster:
+            return None
+
+        hero = PromptEngine._find_selected_hero(cfg, options)
+        if hero:
+            return PromptEngine._hero_to_fragment(hero)
+
+        pool = roster
+        if gender in ("male", "female"):
+            filtered = [
+                h for h in roster if h.get("gender", "any") in (gender, "any")
+            ]
+            if filtered:
+                pool = filtered
+        return PromptEngine._hero_to_fragment(random.choice(pool))
+
+    @staticmethod
+    def extract_assigned_hero(prompt: str) -> str | None:
+        for marker in ("[ORIGINAL SUPERHERO:", "[ASSIGNED HERO:"):
+            start = prompt.find(marker)
+            if start == -1:
+                continue
+            end = prompt.find("]", start)
+            if end == -1:
+                continue
+            return prompt[start + len(marker) : end].strip()
+        return None
 
     @staticmethod
     def build_artist_prompt(style_id: str, extra_options: list[str] | None = None) -> str:
@@ -87,10 +190,12 @@ class PromptEngine:
         gender: str | None = None,
     ) -> str:
         catalog, cfg = PromptEngine._style_cfg("neurobox_styles", style_id)
+        selected_hero = PromptEngine._find_selected_hero(cfg, options)
         cartoon_options: list[str] = cfg.get("cartoon_options", [])
         harmony_options: list[str] = cfg.get("harmony_options", [])
         doll_options: list[str] = cfg.get("doll_options", [])
         cinematic_options: list[str] = cfg.get("cinematic_options", [])
+        comic_options: list[str] = cfg.get("comic_options", [])
         is_cartoon = bool(
             options and cartoon_options and any(o in cartoon_options for o in options)
         )
@@ -103,16 +208,23 @@ class PromptEngine:
         is_cinematic = bool(
             options and cinematic_options and any(o in cinematic_options for o in options)
         )
+        is_comic = bool(
+            options and comic_options and any(o in comic_options for o in options)
+        )
         if is_doll and cfg.get("doll_base"):
             parts = [cfg["doll_base"]]
+        elif is_comic and cfg.get("comic_base"):
+            parts = [cfg["comic_base"]]
         elif is_cinematic and cfg.get("cinematic_base"):
             parts = [cfg["cinematic_base"]]
         else:
             parts = [cfg["base"]]
         if options:
-            mapped = PromptEngine._map_neurobox_options(cfg, options)
+            mapped = PromptEngine._map_neurobox_options(cfg, options, selected_hero)
             if mapped:
                 parts.append(", ".join(mapped))
+        if selected_hero and selected_hero.get("base_override"):
+            parts[0] = str(selected_hero["base_override"])
         gender_bases: dict[str, str] = cfg.get("gender_bases", {})
         doll_gender_bases: dict[str, str] = cfg.get("doll_gender_bases", {})
         cinematic_gender_bases: dict[str, str] = cfg.get("cinematic_gender_bases", {})
@@ -129,7 +241,17 @@ class PromptEngine:
                 parts.append(gender_prompts_style[gender])
             elif gender not in gender_bases and gender in global_gender:
                 parts.append(global_gender[gender])
-        if is_cartoon:
+        hero_fragment = PromptEngine._resolve_hero_fragment(cfg, gender, options)
+        if hero_fragment:
+            parts.append(hero_fragment)
+        transform_technical = (
+            str(selected_hero.get("transform_technical", "")).strip()
+            if selected_hero
+            else ""
+        )
+        if transform_technical:
+            parts.append(transform_technical)
+        elif is_cartoon:
             parts.append(
                 catalog["technical"].get(
                     "portrait_cartoon", catalog["technical"]["portrait"]
@@ -141,15 +263,23 @@ class PromptEngine:
                     "portrait_doll", catalog["technical"]["portrait"]
                 )
             )
-        elif is_cinematic:
+        elif is_comic:
             parts.append(
                 catalog["technical"].get(
+                    "portrait_comic", catalog["technical"]["portrait"]
+                )
+            )
+        elif is_cinematic:
+            parts.append(
+                cfg.get("cinematic_technical")
+                or catalog["technical"].get(
                     "portrait_cinematic", catalog["technical"]["portrait"]
                 )
             )
         elif is_harmonized:
             parts.append(
-                catalog["technical"].get(
+                cfg.get("harmony_technical")
+                or catalog["technical"].get(
                     "portrait_harmonized", catalog["technical"]["portrait"]
                 )
             )

@@ -104,17 +104,78 @@ def _retry_reason(exc: BaseException) -> str:
     return "Временная ошибка API"
 
 
+def _retry_reason(exc: BaseException) -> str:
+    if isinstance(exc, _NETWORK_ERRORS):
+        return "Сетевой сбой"
+    msg = str(exc).lower()
+    if any(
+        token in msg
+        for token in ("503", "unavailable", "high demand", "429", "overloaded")
+    ):
+        return "Сервис Gemini перегружен"
+    return "Временная ошибка API"
+
+
+def _iter_response_parts(response: object) -> list[object]:
+    """Collect content parts from google-genai GenerateContentResponse."""
+    collected: list[object] = []
+    top_parts = getattr(response, "parts", None)
+    if top_parts:
+        collected.extend(top_parts)
+
+    for candidate in getattr(response, "candidates", None) or []:
+        content = getattr(candidate, "content", None)
+        if not content:
+            continue
+        for part in getattr(content, "parts", None) or []:
+            collected.append(part)
+    return collected
+
+
+def _extract_image_bytes_from_response(response: object) -> bytes | None:
+    for part in _iter_response_parts(response):
+        inline = getattr(part, "inline_data", None)
+        if inline is None:
+            continue
+        data = getattr(inline, "data", None)
+        if data:
+            return data
+    return None
+
+
+def _describe_missing_image_response(response: object) -> str:
+    text_chunks: list[str] = []
+    for part in _iter_response_parts(response):
+        text = getattr(part, "text", None)
+        if text and str(text).strip():
+            text_chunks.append(str(text).strip())
+
+    if text_chunks:
+        joined = " ".join(text_chunks)
+        return f"Модель не вернула изображение: {joined[:400]}"
+
+    prompt_feedback = getattr(response, "prompt_feedback", None)
+    if prompt_feedback:
+        return f"Запрос отклонён моделью: {prompt_feedback}"
+
+    return (
+        "API вернул ответ без изображения "
+        "(возможна блокировка контента или временный сбой модели)"
+    )
+
+
 def generate_stylized_image(
     input_image_path: str,
     prompt: str,
     output_image_path: str = "stylized_artwork.jpeg",
     model_name: str = "gemini-2.5-flash-image",
-    max_retries: int = 5,
+    max_retries: int = 2,
     agency_label: str | None = None,
-) -> bool:
+    fallback_prompt: str | None = None,
+) -> tuple[bool, str | None]:
     """
     Генерирует стилизованное изображение на основе наброска/фото и промпта.
-    Возвращает True в случае успеха и False при ошибке.
+    Возвращает (успех, сообщение об ошибке или None).
     """
     print("🎨 Запуск генерации изображения (ИИ-творец/Нейростилист)...")
 
@@ -122,26 +183,49 @@ def generate_stylized_image(
         sketch_image = Image.open(input_image_path)
     except Exception as e:
         print(f"❌ Не удалось открыть {input_image_path}: {e}")
-        return False
+        return False, f"Не удалось открыть фото: {e}"
+
+    last_error: str | None = None
 
     for attempt in range(max_retries):
+        current_prompt = (
+            fallback_prompt
+            if attempt > 0 and fallback_prompt
+            else prompt
+        )
+        if attempt > 0 and fallback_prompt:
+            print("🔄 Повтор с упрощённым промптом (fallback)...")
         try:
             response = client.models.generate_content(
                 model=model_name,
-                contents=[sketch_image, prompt],
+                contents=[sketch_image, current_prompt],
                 config=types.GenerateContentConfig(
                     response_modalities=["IMAGE"]
                 ),
             )
 
+            image_bytes = _extract_image_bytes_from_response(response)
+            if not image_bytes:
+                last_error = _describe_missing_image_response(response)
+                if attempt < max_retries - 1:
+                    wait = _retry_wait_seconds(attempt)
+                    print(
+                        f"⚠️ {last_error} "
+                        f"(попытка {attempt + 1}/{max_retries}). Повтор через {wait} с..."
+                    )
+                    time.sleep(wait)
+                    continue
+                print(f"❌ Ошибка при генерации изображения: {last_error}")
+                return False, last_error
+
             with open(output_image_path, "wb") as f:
-                f.write(response.parts[0].inline_data.data)
+                f.write(image_bytes)
 
             print(
                 f"{_success_ready_prefix(agency_label)}"
                 f"Картина сохранена как {output_image_path}"
             )
-            return True
+            return True, None
 
         except Exception as e:
             if _is_retriable_error(e) and attempt < max_retries - 1:
@@ -152,10 +236,11 @@ def generate_stylized_image(
                 )
                 time.sleep(wait)
                 continue
+            last_error = str(e)
             print(f"❌ Ошибка при генерации изображения: {e}")
-            return False
+            return False, last_error
 
-    return False
+    return False, last_error or "Image generation failed"
 
 
 def _save_generated_video_file(generated_video: object, output_video_path: str) -> None:
