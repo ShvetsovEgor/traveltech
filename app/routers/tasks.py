@@ -34,7 +34,17 @@ async def get_task_status(
         from app.core.timezone import msk_iso
 
         if record.status == TaskStatus.PROCESSING.value:
-            # Живой прогресс хранится в Redis; без записи задача «зависла» (reload и т.п.).
+            from app.core.storage import result_path
+
+            for ext in (".jpeg", ".jpg", ".png", ".webp"):
+                if result_path(task_id, ext).is_file():
+                    return TaskStatusResponse(
+                        task_id=task_id,
+                        status=TaskStatus.COMPLETED,
+                        result_url=result_url(task_id, ext),
+                        error_message=None,
+                        updated_at_msk=msk_iso(record.updated_at_msk),
+                    )
             return TaskStatusResponse(
                 task_id=task_id,
                 status=TaskStatus.FAILED,

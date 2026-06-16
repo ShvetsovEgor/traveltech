@@ -164,11 +164,13 @@ export function StickerPackPhoto() {
   const showProgressGrid = isGeneratingPhase || isDonePhase;
 
   useEffect(() => {
-    return () => {
-      writeSavedTask(null);
-      clearInteraction();
-    };
-  }, [clearInteraction]);
+    if (showProgressGrid) {
+      stopCamera();
+      return;
+    }
+    void startCamera();
+    return () => stopCamera();
+  }, [showProgressGrid]);
 
   const stopCamera = () => {
     const video = videoRef.current;
@@ -346,6 +348,7 @@ export function StickerPackPhoto() {
         writeSavedTask(null);
         setTaskId(null);
         setPollingToken(null);
+        setScreenPhase("confirm");
       },
     },
     { pollIntervalMs: 1500 }

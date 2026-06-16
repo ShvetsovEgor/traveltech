@@ -6,6 +6,7 @@ import { useKioskChrome } from "./KioskChromeContext";
 type KioskScreenProps = {
   children: ReactNode;
   backTo?: string;
+  onBack?: () => void;
   className?: string;
   contentClassName?: string;
 };
@@ -13,6 +14,7 @@ type KioskScreenProps = {
 export function KioskScreen({
   children,
   backTo,
+  onBack,
   className,
   contentClassName,
 }: KioskScreenProps) {
@@ -35,11 +37,11 @@ export function KioskScreen({
       {withBack && (
         <>
           <div className="absolute top-3 left-3 z-20 md:hidden sm:top-4 sm:left-4">
-            <BackButton to={backTo} />
+            <BackButton to={backTo} onBack={onBack} />
           </div>
 
           <div className="relative z-10 mx-auto hidden w-full max-w-7xl shrink-0 px-4 pb-0 pt-4 md:flex md:min-h-14 md:items-center md:px-6 md:pt-5">
-            <BackButton to={backTo} className="relative z-10 shrink-0" />
+            <BackButton to={backTo} onBack={onBack} className="relative z-10 shrink-0" />
             <div
               ref={toolbarCenterRef}
               className="pointer-events-none absolute left-1/2 top-1/2 flex w-full max-w-[min(100%,36rem)] -translate-x-1/2 -translate-y-1/2 items-center justify-center px-4"

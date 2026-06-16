@@ -29,12 +29,6 @@ type NeuroStyle = {
 
 const styles: NeuroStyle[] = [
   {
-    id: "anime",
-    name: "Аниме",
-    coverSrc: "/static/neuro_styles/anime.png",
-    options: ["Яркие цвета", "Большие глаза"],
-  },
-  {
     id: "cyberpunk",
     name: "Киберпанк",
     coverSrc: "/static/neuro_styles/cyberpunk.png",
@@ -106,8 +100,7 @@ const styles: NeuroStyle[] = [
         id: "face",
         label: "Лицо",
         options: [
-          "Реалистичное лицо + мультяшное тело",
-          "Легкая стилизация лица (допустима)",
+          "Полная фотореалистика",
           "Полностью мультяшное лицо, но черты сохранены",
         ],
       },

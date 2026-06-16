@@ -8,7 +8,9 @@ function AppShell() {
     <KioskChromeProvider>
       <div className="fixed inset-0 flex flex-col overflow-hidden bg-background">
         <EndSessionButton />
-        <Outlet />
+        <div className="flex min-h-0 flex-1 flex-col">
+          <Outlet />
+        </div>
       </div>
     </KioskChromeProvider>
   );

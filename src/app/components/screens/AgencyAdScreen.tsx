@@ -8,13 +8,231 @@ type AgencyAdScreenProps = {
   onScreenTap: () => void;
 };
 
+function AdHeader({ className }: { className?: string }) {
+  return (
+    <header className={cn("w-full shrink-0", className)}>
+      <Chip className="mb-1.5 bg-amber-400/20 text-amber-100 portrait:mb-2">
+        <Chip.Label className="text-sm font-semibold uppercase tracking-wide portrait:text-base landscape:text-sm">
+          {AGENCY.name}
+        </Chip.Label>
+      </Chip>
+      <Typography.Heading
+        level={1}
+        className={cn(
+          "font-extrabold leading-[1.08] text-white",
+          "portrait:text-[clamp(2rem,6.2vh,3rem)]",
+          "landscape:text-[clamp(1.75rem,4.5vh,2.75rem)]"
+        )}
+      >
+        {AGENCY.headline}
+      </Typography.Heading>
+      <p
+        className={cn(
+          "mt-1.5 flex items-start gap-2 text-left leading-snug text-amber-100/95",
+          "portrait:mt-2 portrait:text-[clamp(1rem,2.6vh,1.25rem)]",
+          "landscape:mt-1.5 landscape:text-[clamp(0.875rem,2.2vh,1.05rem)]"
+        )}
+      >
+        <Award
+          className="mt-0.5 size-5 shrink-0 text-amber-300 portrait:size-6"
+          aria-hidden
+        />
+        <span>{AGENCY.award}</span>
+      </p>
+    </header>
+  );
+}
+
+function HighlightsGrid({ variant }: { variant: "portrait" | "landscape" }) {
+  const isPortrait = variant === "portrait";
+
+  return (
+    <div
+      className={cn(
+        "w-full shrink-0",
+        isPortrait
+          ? "grid grid-cols-2 gap-x-4 gap-y-3"
+          : "flex items-start justify-between gap-4 lg:gap-6"
+      )}
+    >
+      <p
+        className={cn(
+          "font-semibold leading-snug text-white",
+          isPortrait
+            ? "text-center text-[clamp(1rem,2.5vh,1.2rem)]"
+            : "max-w-[14rem] flex-1 text-center text-[clamp(0.9rem,2vh,1.05rem)]"
+        )}
+      >
+        {getInteractivesHighlight()}
+      </p>
+      <p
+        className={cn(
+          "font-semibold leading-snug text-white",
+          isPortrait
+            ? "text-center text-[clamp(1rem,2.5vh,1.2rem)]"
+            : "max-w-[11rem] flex-1 text-center text-[clamp(0.9rem,2vh,1.05rem)]"
+        )}
+      >
+        {AGENCY.guidesHighlight}
+      </p>
+      {AGENCY.stats.map((stat) => (
+        <div
+          key={stat.label}
+          className={cn(isPortrait ? "text-center" : "flex-1 text-center")}
+        >
+          <p
+            className={cn(
+              "font-bold leading-tight text-white",
+              isPortrait
+                ? "text-[clamp(1.35rem,3.8vh,1.75rem)]"
+                : "text-[clamp(1.125rem,2.8vh,1.5rem)]"
+            )}
+          >
+            {stat.value}
+          </p>
+          <p
+            className={cn(
+              "mt-0.5 leading-tight text-white/75",
+              isPortrait
+                ? "text-[clamp(0.8rem,2vh,1rem)]"
+                : "text-[clamp(0.7rem,1.6vh,0.875rem)]"
+            )}
+          >
+            {stat.label}
+          </p>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+function CtaBlock({ variant }: { variant: "portrait" | "landscape" }) {
+  const isPortrait = variant === "portrait";
+
+  return (
+    <div
+      className={cn(
+        "flex w-full shrink-0 items-center justify-center",
+        isPortrait ? "flex-col gap-3" : "flex-row gap-5"
+      )}
+    >
+      <p
+        className={cn(
+          "font-bold leading-snug text-amber-300",
+          isPortrait
+            ? "text-center text-[clamp(1.35rem,4vh,2rem)]"
+            : "max-w-[14rem] flex-1 text-right text-[clamp(1.125rem,3.2vh,1.75rem)]"
+        )}
+      >
+        {AGENCY.immerseCta}
+      </p>
+
+      {!isPortrait && (
+        <ArrowRight
+          className="size-14 shrink-0 text-amber-400"
+          strokeWidth={2.5}
+          aria-hidden
+        />
+      )}
+
+      <div className="flex shrink-0">
+        <div
+          className={cn(
+            "rounded-2xl bg-white p-2 shadow-2xl shadow-violet-900/50 ring-4 ring-amber-400/80",
+            isPortrait && "rounded-3xl p-2.5"
+          )}
+        >
+          <img
+            src={qrPhoneSvg}
+            alt=""
+            className={cn(
+              "h-auto",
+              isPortrait ? "w-[min(52vw,240px)]" : "w-[min(200px,22vw)]"
+            )}
+            width={696}
+            height={696}
+            decoding="async"
+          />
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function AdFooter({ variant }: { variant: "portrait" | "landscape" }) {
+  if (!AGENCY.phoneDisplay && !AGENCY.websiteLabel) return null;
+
+  const isPortrait = variant === "portrait";
+
+  return (
+    <div
+      className={cn(
+        "flex shrink-0 flex-col gap-2",
+        isPortrait ? "items-start gap-2.5" : "items-center landscape:items-start"
+      )}
+    >
+      {AGENCY.phoneDisplay ? (
+        <p
+          className={cn(
+            "inline-flex items-center gap-2 font-extrabold text-white",
+            isPortrait
+              ? "text-[clamp(1.75rem,5vh,2.25rem)]"
+              : "text-[clamp(1.5rem,4vh,2rem)]"
+          )}
+        >
+          <Phone className="size-7 shrink-0 portrait:size-8" aria-hidden />
+          {AGENCY.phoneDisplay}
+        </p>
+      ) : null}
+      <p
+        className={cn(
+          "inline-flex items-center gap-2 rounded-xl bg-amber-400 px-4 py-2",
+          "font-bold text-[#1a1040] shadow-lg shadow-amber-400/30",
+          isPortrait
+            ? "px-5 py-2.5 text-lg"
+            : "text-[clamp(0.95rem,2.2vh,1.05rem)]"
+        )}
+      >
+        <Globe className="size-5 portrait:size-6" aria-hidden />
+        {AGENCY.websiteLabel}
+      </p>
+    </div>
+  );
+}
+
+function PortraitLayout() {
+  return (
+    <div className="flex h-full min-h-0 w-full flex-col justify-between gap-3 portrait:flex landscape:hidden">
+      <AdHeader className="text-left" />
+      <div className="flex min-h-0 flex-1 flex-col justify-evenly gap-4">
+        <HighlightsGrid variant="portrait" />
+        <CtaBlock variant="portrait" />
+      </div>
+      <AdFooter variant="portrait" />
+    </div>
+  );
+}
+
+function LandscapeLayout() {
+  return (
+    <div className="hidden h-full min-h-0 w-full flex-col justify-between gap-3 landscape:flex">
+      <AdHeader className="text-left" />
+      <div className="flex min-h-0 flex-1 flex-col justify-center gap-5">
+        <HighlightsGrid variant="landscape" />
+        <CtaBlock variant="landscape" />
+      </div>
+      <AdFooter variant="landscape" />
+    </div>
+  );
+}
+
 export function AgencyAdScreen({ onScreenTap }: AgencyAdScreenProps) {
   return (
     <KioskScreen
-      className="relative cursor-pointer overflow-hidden bg-[#0c0824]"
+      className="relative h-full min-h-0 cursor-pointer overflow-hidden bg-[#0c0824]"
       contentClassName={cn(
-        "relative mx-auto flex w-full min-h-0 max-w-5xl flex-col justify-center",
-        "!p-4 sm:!p-6 md:!p-8"
+        "relative mx-auto flex h-full w-full min-h-0 max-w-5xl flex-col",
+        "!gap-0 !p-3 portrait:!py-2 landscape:!p-4 landscape:lg:!p-6"
       )}
     >
       <button
@@ -24,136 +242,17 @@ export function AgencyAdScreen({ onScreenTap }: AgencyAdScreenProps) {
         onClick={onScreenTap}
       />
       <div
-        className="pointer-events-none absolute -right-20 -top-20 size-56 rounded-full bg-violet-500/30 blur-3xl sm:-right-24 sm:-top-24 sm:size-72 md:size-96"
+        className="pointer-events-none absolute -right-20 -top-20 size-56 rounded-full bg-violet-500/30 blur-3xl sm:size-72"
         aria-hidden
       />
       <div
-        className="pointer-events-none absolute -bottom-24 -left-12 size-64 rounded-full bg-fuchsia-500/25 blur-3xl sm:-bottom-32 sm:-left-16 sm:size-80"
+        className="pointer-events-none absolute -bottom-24 -left-12 size-64 rounded-full bg-fuchsia-500/25 blur-3xl sm:size-80"
         aria-hidden
       />
 
-      <div className="relative z-10 flex w-full flex-col items-center gap-4 pointer-events-none sm:gap-5 md:gap-6">
-        <header className="w-full shrink-0 text-center sm:text-left">
-          <Chip className="mb-2 bg-amber-400/20 text-amber-100 sm:mb-3">
-            <Chip.Label className="text-xs font-semibold uppercase tracking-wide sm:text-sm">
-              {AGENCY.name}
-            </Chip.Label>
-          </Chip>
-          <Typography.Heading
-            level={1}
-            className="text-2xl font-extrabold leading-tight text-white sm:text-4xl md:text-5xl"
-          >
-            {AGENCY.headline}
-          </Typography.Heading>
-          <p className="mt-2 flex items-start justify-center gap-2 text-left text-xs leading-snug text-amber-100/95 sm:mt-3 sm:justify-start sm:text-sm md:text-base">
-            <Award
-              className="mt-0.5 size-4 shrink-0 text-amber-300 sm:size-5"
-              aria-hidden
-            />
-            {AGENCY.award}
-          </p>
-        </header>
-
-        {/* Мобилка: 2×2, без карточек */}
-        <div className="grid w-full max-w-md shrink-0 grid-cols-2 gap-x-3 gap-y-3 sm:max-w-lg md:hidden">
-          <p className="text-center text-xs font-semibold leading-snug text-white sm:text-sm">
-            {getInteractivesHighlight()}
-          </p>
-          <p className="text-center text-xs font-semibold leading-snug text-white sm:text-sm">
-            {AGENCY.guidesHighlight}
-          </p>
-          {AGENCY.stats.map((stat) => (
-            <div key={stat.label} className="text-center">
-              <p className="text-base font-bold leading-tight text-white sm:text-lg">
-                {stat.value}
-              </p>
-              <p className="mt-0.5 text-[10px] leading-tight text-white/75 sm:text-xs">
-                {stat.label}
-              </p>
-            </div>
-          ))}
-        </div>
-
-        {/* Десктоп: один ряд — интерактивы, гиды, 150 000+, 3 года */}
-        <div className="hidden w-full shrink-0 items-start justify-between gap-4 md:flex lg:gap-8">
-          <p className="max-w-[14rem] flex-1 text-center text-sm font-semibold leading-snug text-white lg:text-base">
-            {getInteractivesHighlight()}
-          </p>
-          <p className="max-w-[11rem] flex-1 text-center text-sm font-semibold leading-snug text-white lg:text-base">
-            {AGENCY.guidesHighlight}
-          </p>
-          {AGENCY.stats.map((stat) => (
-            <div key={stat.label} className="flex-1 text-center">
-              <p className="text-xl font-bold leading-tight text-white lg:text-2xl">
-                {stat.value}
-              </p>
-              <p className="mt-1 text-xs leading-tight text-white/75 lg:text-sm">
-                {stat.label}
-              </p>
-            </div>
-          ))}
-        </div>
-
-        <div
-          className={cn(
-            "flex w-full max-w-3xl flex-row items-center justify-center gap-3",
-            "sm:gap-5 md:gap-8"
-          )}
-        >
-          <p
-            className={cn(
-              "min-w-0 flex-1 text-right text-base font-bold leading-snug text-amber-300",
-              "min-[400px]:text-lg sm:max-w-[11rem] sm:text-xl md:max-w-[14rem] md:text-2xl"
-            )}
-          >
-            {AGENCY.immerseCta}
-          </p>
-
-          <ArrowRight
-            className="size-10 shrink-0 text-amber-400 sm:size-14 md:size-16"
-            strokeWidth={2.5}
-            aria-hidden
-          />
-
-          <div className="flex shrink-0">
-            <div
-              className={cn(
-                "rounded-2xl bg-white p-2 shadow-2xl shadow-violet-900/50",
-                "ring-4 ring-amber-400/80",
-                "min-[400px]:rounded-3xl min-[400px]:p-2.5 sm:p-3"
-              )}
-            >
-              <img
-                src={qrPhoneSvg}
-                alt=""
-                className="h-auto w-[min(52vw,200px)] sm:w-[200px] md:w-[220px]"
-                width={696}
-                height={696}
-                decoding="async"
-              />
-            </div>
-          </div>
-        </div>
-
-        {(AGENCY.phoneDisplay || AGENCY.websiteLabel) && (
-          <div className="flex flex-col items-center gap-3 sm:items-start">
-            {AGENCY.phoneDisplay ? (
-              <p className="inline-flex items-center gap-2 text-2xl font-extrabold text-white sm:text-3xl">
-                <Phone className="size-7 shrink-0 sm:size-8" aria-hidden />
-                {AGENCY.phoneDisplay}
-              </p>
-            ) : null}
-            <p
-              className={cn(
-                "inline-flex items-center gap-2 rounded-xl bg-amber-400 px-4 py-2.5",
-                "text-sm font-bold text-[#1a1040] shadow-lg shadow-amber-400/30 sm:text-base"
-              )}
-            >
-              <Globe className="size-5" aria-hidden />
-              {AGENCY.websiteLabel}
-            </p>
-          </div>
-        )}
+      <div className="relative z-10 h-full min-h-0 w-full pointer-events-none">
+        <PortraitLayout />
+        <LandscapeLayout />
       </div>
     </KioskScreen>
   );

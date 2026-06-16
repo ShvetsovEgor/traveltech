@@ -1,3 +1,4 @@
+import os
 import re
 from datetime import datetime
 from collections import defaultdict
@@ -314,4 +315,11 @@ def main():
 
 
 if __name__ == "__main__":
+    files = ['01.06.26_07.06.26.txt', '08.06.26_15.06.26.txt', '19.05.26_24.05.26.txt', '25.05.26_31.05.26.txt']
+    with open('app.log', 'w') as log_file:
+        for file in files:
+            with open(f"logs/{file}") as temp_file:
+                log_file.write(temp_file.read())
+
+
     main()

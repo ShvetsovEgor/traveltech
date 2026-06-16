@@ -5,13 +5,15 @@ import { Button } from "@heroui/react";
 interface BackButtonProps {
   to?: string;
   className?: string;
+  onBack?: () => void;
 }
 
-export function BackButton({ to, className = "" }: BackButtonProps) {
+export function BackButton({ to, className = "", onBack }: BackButtonProps) {
   const navigate = useNavigate();
   const location = useLocation();
 
   const handleClick = () => {
+    onBack?.();
     if (to) {
       navigate({ pathname: to, search: location.search });
     } else {

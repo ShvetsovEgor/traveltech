@@ -8,3 +8,4 @@ export { MediaWithQrOverlay } from "./MediaWithQrOverlay";
 export { LoadingStepsList } from "./LoadingStepsList";
 export type { LoadingStep } from "./LoadingStepsList";
 export { InteractiveStrip } from "./InteractiveStrip";
+export { NetworkStatusLine } from "./NetworkStatusLine";

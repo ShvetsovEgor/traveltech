@@ -87,22 +87,74 @@ class PromptEngine:
         gender: str | None = None,
     ) -> str:
         catalog, cfg = PromptEngine._style_cfg("neurobox_styles", style_id)
-        parts = [cfg["base"]]
+        cartoon_options: list[str] = cfg.get("cartoon_options", [])
+        harmony_options: list[str] = cfg.get("harmony_options", [])
+        doll_options: list[str] = cfg.get("doll_options", [])
+        cinematic_options: list[str] = cfg.get("cinematic_options", [])
+        is_cartoon = bool(
+            options and cartoon_options and any(o in cartoon_options for o in options)
+        )
+        is_harmonized = bool(
+            options and harmony_options and any(o in harmony_options for o in options)
+        )
+        is_doll = bool(
+            options and doll_options and any(o in doll_options for o in options)
+        )
+        is_cinematic = bool(
+            options and cinematic_options and any(o in cinematic_options for o in options)
+        )
+        if is_doll and cfg.get("doll_base"):
+            parts = [cfg["doll_base"]]
+        elif is_cinematic and cfg.get("cinematic_base"):
+            parts = [cfg["cinematic_base"]]
+        else:
+            parts = [cfg["base"]]
         if options:
             mapped = PromptEngine._map_neurobox_options(cfg, options)
             if mapped:
                 parts.append(", ".join(mapped))
         gender_bases: dict[str, str] = cfg.get("gender_bases", {})
+        doll_gender_bases: dict[str, str] = cfg.get("doll_gender_bases", {})
+        cinematic_gender_bases: dict[str, str] = cfg.get("cinematic_gender_bases", {})
         gender_prompts_style: dict[str, str] = cfg.get("gender_prompts", {})
         global_gender: dict[str, str] = catalog["gender"]
         if gender:
-            if gender in gender_bases:
+            if is_doll and gender in doll_gender_bases:
+                parts[0] = doll_gender_bases[gender]
+            elif is_cinematic and gender in cinematic_gender_bases:
+                parts[0] = cinematic_gender_bases[gender]
+            elif gender in gender_bases:
                 parts[0] = gender_bases[gender]
             if gender in gender_prompts_style:
                 parts.append(gender_prompts_style[gender])
             elif gender not in gender_bases and gender in global_gender:
                 parts.append(global_gender[gender])
-        parts.append(catalog["technical"]["portrait"])
+        if is_cartoon:
+            parts.append(
+                catalog["technical"].get(
+                    "portrait_cartoon", catalog["technical"]["portrait"]
+                )
+            )
+        elif is_doll:
+            parts.append(
+                catalog["technical"].get(
+                    "portrait_doll", catalog["technical"]["portrait"]
+                )
+            )
+        elif is_cinematic:
+            parts.append(
+                catalog["technical"].get(
+                    "portrait_cinematic", catalog["technical"]["portrait"]
+                )
+            )
+        elif is_harmonized:
+            parts.append(
+                catalog["technical"].get(
+                    "portrait_harmonized", catalog["technical"]["portrait"]
+                )
+            )
+        else:
+            parts.append(catalog["technical"]["portrait"])
         return " ".join(parts)
 
     @staticmethod
