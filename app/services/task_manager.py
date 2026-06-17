@@ -21,7 +21,9 @@ from app.core.generation_log import append_generation_log
 from app.core.guide_agencies import resolve_agency_for_interaction
 from app.core.prompt_engine import PromptEngine
 from app.core.storage import (
+    cleanup_task_input,
     cleanup_upload_file,
+    copy_to_task_input,
     result_path,
     result_url,
     sticker_preview_path,
@@ -321,11 +323,13 @@ class TaskManager:
         db_factory,
         fallback_prompt: str | None = None,
     ) -> None:
+        task_input = copy_to_task_input(task_id, input_path)
+        cleanup_upload_file(input_path)
         asyncio.create_task(
             self._run_image_task(
                 task_id=task_id,
                 interaction_token=interaction_token,
-                input_path=input_path,
+                input_path=task_input,
                 prompt=prompt,
                 fallback_prompt=fallback_prompt,
                 db_factory=db_factory,
@@ -341,11 +345,13 @@ class TaskManager:
         prompt: str,
         db_factory,
     ) -> None:
+        task_input = copy_to_task_input(task_id, input_path)
+        cleanup_upload_file(input_path)
         asyncio.create_task(
             self._run_video_task(
                 task_id=task_id,
                 interaction_token=interaction_token,
-                input_path=input_path,
+                input_path=task_input,
                 prompt=prompt,
                 db_factory=db_factory,
             )
@@ -359,11 +365,13 @@ class TaskManager:
         input_path: Path,
         db_factory,
     ) -> None:
+        task_input = copy_to_task_input(task_id, input_path)
+        cleanup_upload_file(input_path)
         asyncio.create_task(
             self._run_sticker_pack_task(
                 task_id=task_id,
                 interaction_token=interaction_token,
-                input_path=input_path,
+                input_path=task_input,
                 db_factory=db_factory,
             )
         )
@@ -417,7 +425,7 @@ class TaskManager:
                     db, task_id, TaskStatus.FAILED, error_message=str(exc)
                 )
         finally:
-            cleanup_upload_file(input_path)
+            cleanup_task_input(task_id)
 
     async def _run_video_task(
         self,
@@ -466,7 +474,7 @@ class TaskManager:
                     db, task_id, TaskStatus.FAILED, error_message=str(exc)
                 )
         finally:
-            cleanup_upload_file(input_path)
+            cleanup_task_input(task_id)
 
     async def _run_sticker_pack_task(
         self,
@@ -590,7 +598,7 @@ class TaskManager:
                     db, task_id, TaskStatus.FAILED, error_message=str(exc)
                 )
         finally:
-            cleanup_upload_file(input_path)
+            cleanup_task_input(task_id)
 
 
 def _call_generate_stylized_image(

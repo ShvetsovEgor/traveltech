@@ -40,7 +40,7 @@ export function KioskScreen({
             <BackButton to={backTo} onBack={onBack} />
           </div>
 
-          <div className="relative z-10 mx-auto hidden w-full max-w-7xl shrink-0 px-4 pb-0 pt-4 md:flex md:min-h-14 md:items-center md:px-6 md:pt-5">
+          <div className="relative z-10 mx-auto hidden w-full max-w-7xl shrink-0 px-4 pb-0 pt-5 md:flex md:min-h-[3.75rem] md:items-center md:px-6 md:pt-6">
             <BackButton to={backTo} onBack={onBack} className="relative z-10 shrink-0" />
             <div
               ref={toolbarCenterRef}
@@ -58,7 +58,7 @@ export function KioskScreen({
         className={cn(
           "relative z-10 mx-auto flex w-full max-w-7xl min-h-0 flex-1 flex-col",
           withBack
-            ? "gap-3 px-3 pb-4 pt-14 sm:gap-4 sm:px-4 sm:pb-5 sm:pt-16 md:gap-4 md:px-6 md:pb-5 md:pt-3"
+            ? "gap-3 px-3 pb-4 pt-16 sm:gap-4 sm:px-4 sm:pb-5 sm:pt-20 md:gap-4 md:px-6 md:pb-5 md:pt-4"
             : "gap-4 p-4 sm:gap-5 sm:p-6 md:p-8",
           contentClassName
         )}

@@ -1,6 +1,6 @@
 """
 Two-level authorization:
-  1. KioskAuth — global kiosk_token (8h TTL, PIN login)
+  1. KioskAuth — global kiosk_token (PIN login; ends only on logout)
   2. AppSession — interaction_token per screen (2min heartbeat)
 """
 
@@ -14,7 +14,7 @@ from fastapi import HTTPException, status
 
 from app.config import Settings, get_settings
 from app.core.kiosk_pins import kiosk_pin_for
-from app.core.timezone import add_hours_msk, add_seconds_msk, is_expired, msk_iso, now_msk, to_msk
+from app.core.timezone import add_seconds_msk, msk_iso, now_msk, to_msk
 from app.models.enums import AppType, GuideAgency, KioskId
 from app.services.redis_client import RedisStore
 
@@ -27,7 +27,7 @@ def _token() -> str:
 class KioskAuth:
     kiosk_token: str
     kiosk_id: KioskId
-    expires_at_msk: str  # ISO in MSK
+    expires_at_msk: str | None = None
     agency_id: GuideAgency = GuideAgency.TRAVELTECH
 
     def to_dict(self) -> dict[str, Any]:
@@ -48,7 +48,7 @@ class KioskAuth:
         return cls(
             kiosk_token=data["kiosk_token"],
             kiosk_id=KioskId(data["kiosk_id"]),
-            expires_at_msk=data["expires_at_msk"],
+            expires_at_msk=data.get("expires_at_msk"),
             agency_id=agency_id,
         )
 
@@ -103,23 +103,18 @@ class SecurityService:
                 detail="Invalid PIN for this kiosk and agency",
             )
         kiosk_token = _token()
-        expires = add_hours_msk(self.settings.kiosk_token_ttl_hours)
         auth = KioskAuth(
             kiosk_token=kiosk_token,
             kiosk_id=kiosk_id,
-            expires_at_msk=msk_iso(expires),
             agency_id=agency,
         )
-        ttl_seconds = int(self.settings.kiosk_token_ttl_hours * 3600)
         await self.redis.set_json(
             self.KIOSK_KEY.format(token=kiosk_token),
             auth.to_dict(),
-            ttl_seconds=ttl_seconds,
         )
         await self.redis.set_json(
             self.KIOSK_SLOT_KEY.format(kiosk_id=kiosk_id.value),
             auth.to_dict(),
-            ttl_seconds=ttl_seconds,
         )
         return auth
 
@@ -130,12 +125,6 @@ class SecurityService:
         if not data:
             return {"active": False, "kiosk_id": kiosk_id.value}
         auth = KioskAuth.from_dict(data)
-        if is_expired(to_msk(auth.expires_at_msk)):
-            await self.redis.delete(
-                key,
-                self.KIOSK_KEY.format(token=auth.kiosk_token),
-            )
-            return {"active": False, "kiosk_id": kiosk_id.value}
         return {
             "active": True,
             "kiosk_id": auth.kiosk_id.value,
@@ -181,12 +170,6 @@ class SecurityService:
                 detail="Invalid or expired kiosk_token",
             )
         auth = KioskAuth.from_dict(data)
-        if is_expired(to_msk(auth.expires_at_msk)):
-            await self.redis.delete(self.KIOSK_KEY.format(token=kiosk_token))
-            raise HTTPException(
-                status_code=status.HTTP_401_UNAUTHORIZED,
-                detail="kiosk_token expired",
-            )
         return auth
 
     async def start_interaction(

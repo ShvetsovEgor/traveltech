@@ -17,7 +17,7 @@ type LoadingStepsListProps = {
 
 export function LoadingStepsList({
   steps,
-  intervalMs = 2400,
+  intervalMs = 5000,
   className,
 }: LoadingStepsListProps) {
   const [activeStep, setActiveStep] = useState(0);

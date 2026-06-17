@@ -15,10 +15,7 @@ const MIME: Record<string, string> = {
   ".glb": "model/gltf-binary",
 };
 
-const GAME_FOLDERS = [
-  { mount: "/mintimer_game", dir: "mintimer_game" },
-  { mount: "/rover_lidar", dir: "rover_lidar" },
-] as const;
+const GAME_FOLDERS = [{ mount: "/mintimer_game", dir: "mintimer_game" }] as const;
 
 function staticFolderMiddleware(
   mount: string,
@@ -65,7 +62,7 @@ function staticFolderMiddleware(
   };
 }
 
-/** Раздаёт mintimer_game/ и rover_lidar/ в dev/preview и копирует в dist при сборке. */
+/** Раздаёт mintimer_game/ в dev/preview и копирует в dist при сборке. */
 export function staticGamesPlugin(): Plugin {
   const roots = GAME_FOLDERS.map(({ mount, dir }) => ({
     mount,

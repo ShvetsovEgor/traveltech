@@ -12,17 +12,6 @@ import type { GuideAgencyId, KioskId } from "../../api/types";
 import { getKioskIdFromSearch } from "../../utils/kioskLocation";
 import { KioskScreen } from "../kiosk";
 
-const GUIDE_AUTH_SUCCESS_KEY = "traveltech_guide_auth_success";
-
-function readGuideAuthSuccess(kioskId: KioskId | null): boolean {
-  if (!kioskId) return false;
-  return sessionStorage.getItem(GUIDE_AUTH_SUCCESS_KEY) === kioskId;
-}
-
-function writeGuideAuthSuccess(kioskId: KioskId) {
-  sessionStorage.setItem(GUIDE_AUTH_SUCCESS_KEY, kioskId);
-}
-
 export function GuideAuthScreen() {
   const [searchParams] = useSearchParams();
   const { login } = useKiosk();
@@ -35,7 +24,7 @@ export function GuideAuthScreen() {
   const [pin, setPin] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
-  const [success, setSuccess] = useState(() => readGuideAuthSuccess(kioskId));
+  const [success, setSuccess] = useState(false);
 
   if (success && kioskId) {
     return (
@@ -69,7 +58,6 @@ export function GuideAuthScreen() {
     setLoading(true);
     try {
       await login(pin, kioskId, agencyId);
-      writeGuideAuthSuccess(kioskId);
       setSuccess(true);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Ошибка входа");

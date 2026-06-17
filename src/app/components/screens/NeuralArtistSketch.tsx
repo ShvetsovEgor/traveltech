@@ -5,9 +5,9 @@ import { Eraser, Minus, Plus, RotateCcw } from "lucide-react";
 import { Button, Card, Surface, Typography } from "@heroui/react";
 import {
   clearPendingArtistSketch,
+  getPendingArtistSketchStyle,
   setPendingArtistSketch,
 } from "../../utils/artistSketchSession";
-import { dataUrlToFile } from "../../utils/media";
 import { KioskBody, KioskHeader, KioskScreen } from "../kiosk";
 
 export function NeuralArtistSketch() {
@@ -21,17 +21,19 @@ export function NeuralArtistSketch() {
   const style = location.state?.style || "vangogh";
 
   useEffect(() => {
-    clearPendingArtistSketch();
-  }, []);
+    const storedStyle = getPendingArtistSketchStyle();
+    if (storedStyle && storedStyle !== style) {
+      clearPendingArtistSketch();
+    }
+  }, [style]);
 
   const handleComplete = async () => {
     setSubmitting(true);
     try {
       const dataUrl = await canvasRef.current?.exportImage("jpeg");
       if (!dataUrl) throw new Error("empty");
-      const sketchFile = await dataUrlToFile(dataUrl, "sketch.jpg");
-      setPendingArtistSketch(sketchFile);
-      navigate("/neural-artist/loading", { state: { style } });
+      setPendingArtistSketch(dataUrl, style);
+      navigate("/neural-artist/loading", { state: { style, sketchDataUrl: dataUrl } });
     } catch {
       alert("Нарисуйте набросок перед продолжением");
     } finally {

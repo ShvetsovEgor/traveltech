@@ -1,91 +1,164 @@
-import { ArrowRight, Award, Globe, Phone } from "lucide-react";
-import { Chip, Typography, cn } from "@heroui/react";
+import type { ReactNode } from "react";
+import { Award, Globe, Phone } from "lucide-react";
+import { cn } from "@heroui/react";
 import { AGENCY, getInteractivesHighlight } from "../../config/agency";
 import { KioskScreen } from "../kiosk";
+import agencyLogo from "../../../../logo_1.png?url";
 import qrPhoneSvg from "../../../../qr_phone.svg?url";
 
 type AgencyAdScreenProps = {
   onScreenTap: () => void;
 };
 
-function AdHeader({ className }: { className?: string }) {
+type LayoutVariant = "portrait" | "landscape";
+
+function splitHeadline(headline: string): [string, string] {
+  const marker = " в ";
+  const idx = headline.indexOf(marker);
+  if (idx === -1) return [headline, ""];
+  return [headline.slice(0, idx), headline.slice(idx + 1)];
+}
+
+function AdHeader({ variant }: { variant: LayoutVariant }) {
+  const isPortrait = variant === "portrait";
+  const [headlineTop, headlineBottom] = splitHeadline(AGENCY.headline);
+
   return (
-    <header className={cn("w-full shrink-0", className)}>
-      <Chip className="mb-1.5 bg-amber-400/20 text-amber-100 portrait:mb-2">
-        <Chip.Label className="text-sm font-semibold uppercase tracking-wide portrait:text-base landscape:text-sm">
-          {AGENCY.name}
-        </Chip.Label>
-      </Chip>
-      <Typography.Heading
-        level={1}
+    <header className="w-full shrink-0">
+      <div
         className={cn(
-          "font-extrabold leading-[1.08] text-white",
-          "portrait:text-[clamp(2rem,6.2vh,3rem)]",
-          "landscape:text-[clamp(1.75rem,4.5vh,2.75rem)]"
+          "flex items-center",
+          isPortrait ? "gap-2.5 portrait:gap-3" : "gap-4 lg:gap-5"
         )}
       >
-        {AGENCY.headline}
-      </Typography.Heading>
-      <p
-        className={cn(
-          "mt-1.5 flex items-start gap-2 text-left leading-snug text-amber-100/95",
-          "portrait:mt-2 portrait:text-[clamp(1rem,2.6vh,1.25rem)]",
-          "landscape:mt-1.5 landscape:text-[clamp(0.875rem,2.2vh,1.05rem)]"
-        )}
-      >
-        <Award
-          className="mt-0.5 size-5 shrink-0 text-amber-300 portrait:size-6"
-          aria-hidden
+        <img
+          src={agencyLogo}
+          alt={AGENCY.name}
+          className={cn(
+            "h-auto w-auto shrink-0 object-contain",
+            isPortrait
+              ? "portrait:h-[clamp(5rem,13vh,7.5rem)] portrait:max-w-[36vw]"
+              : "landscape:h-[clamp(5.5rem,13vh,8.5rem)] landscape:max-w-[28vw] landscape:lg:h-[clamp(6.5rem,15vh,10rem)] landscape:lg:max-w-[24vw]"
+          )}
+          draggable={false}
+          decoding="async"
         />
-        <span>{AGENCY.award}</span>
-      </p>
+        <h1
+          className={cn(
+            "min-w-0 flex-1 font-extrabold leading-[1.05] text-white",
+            isPortrait
+              ? "portrait:text-[clamp(1.2rem,3.6vh,1.75rem)]"
+              : "landscape:text-[clamp(1.75rem,4.5vh,2.75rem)] landscape:lg:text-[clamp(2rem,5vh,3.25rem)] landscape:xl:text-[clamp(2.25rem,5.5vh,3.75rem)]"
+          )}
+        >
+          {headlineTop}
+          {headlineBottom ? (
+            <>
+              <br />
+              {headlineBottom}
+            </>
+          ) : null}
+        </h1>
+      </div>
+      <div
+        className={cn(
+          "mt-2 flex w-full justify-center",
+          isPortrait ? "portrait:mt-2.5" : "landscape:mt-3 landscape:lg:mt-4"
+        )}
+      >
+        <div
+          className={cn(
+            "inline-flex max-w-full items-center justify-center gap-2 rounded-2xl",
+            "border border-amber-400/35 bg-amber-400/12 text-center",
+            "shadow-lg shadow-black/15 backdrop-blur-md",
+            "leading-snug text-amber-50",
+            isPortrait
+              ? "px-3 py-2 text-[clamp(0.85rem,2.2vh,1.05rem)]"
+              : "px-4 py-2.5 text-[clamp(0.9rem,2.2vh,1.1rem)] landscape:lg:px-5 landscape:lg:py-3 landscape:lg:text-[clamp(1rem,2.4vh,1.2rem)]"
+          )}
+        >
+          <Award
+            className={cn(
+              "shrink-0 text-amber-300",
+              isPortrait ? "size-4 portrait:size-5" : "size-5 landscape:lg:size-6"
+            )}
+            aria-hidden
+          />
+          <span>{AGENCY.award}</span>
+        </div>
+      </div>
     </header>
   );
 }
 
-function HighlightsGrid({ variant }: { variant: "portrait" | "landscape" }) {
+function FactCard({
+  children,
+  variant,
+  className,
+}: {
+  children: ReactNode;
+  variant: LayoutVariant;
+  className?: string;
+}) {
   const isPortrait = variant === "portrait";
 
   return (
     <div
       className={cn(
-        "w-full shrink-0",
+        "rounded-2xl border border-white/25 bg-white/12 text-center shadow-lg shadow-black/15 backdrop-blur-md",
         isPortrait
-          ? "grid grid-cols-2 gap-x-4 gap-y-3"
-          : "flex items-start justify-between gap-4 lg:gap-6"
+          ? "px-2.5 py-2"
+          : "px-3 py-2.5 landscape:lg:px-4 landscape:lg:py-3",
+        className
       )}
     >
-      <p
-        className={cn(
-          "font-semibold leading-snug text-white",
-          isPortrait
-            ? "text-center text-[clamp(1rem,2.5vh,1.2rem)]"
-            : "max-w-[14rem] flex-1 text-center text-[clamp(0.9rem,2vh,1.05rem)]"
-        )}
-      >
-        {getInteractivesHighlight()}
-      </p>
-      <p
-        className={cn(
-          "font-semibold leading-snug text-white",
-          isPortrait
-            ? "text-center text-[clamp(1rem,2.5vh,1.2rem)]"
-            : "max-w-[11rem] flex-1 text-center text-[clamp(0.9rem,2vh,1.05rem)]"
-        )}
-      >
-        {AGENCY.guidesHighlight}
-      </p>
-      {AGENCY.stats.map((stat) => (
-        <div
-          key={stat.label}
-          className={cn(isPortrait ? "text-center" : "flex-1 text-center")}
+      {children}
+    </div>
+  );
+}
+
+function HighlightsGrid({ variant }: { variant: LayoutVariant }) {
+  const isPortrait = variant === "portrait";
+
+  return (
+    <div
+      className={cn(
+        "grid w-full shrink-0 grid-cols-2",
+        isPortrait ? "gap-2.5" : "gap-3 landscape:lg:gap-4 landscape:xl:gap-5"
+      )}
+    >
+      <FactCard variant={variant}>
+        <p
+          className={cn(
+            "font-semibold leading-snug text-white",
+            isPortrait
+              ? "text-[clamp(0.85rem,2.2vh,1rem)]"
+              : "text-[clamp(0.95rem,2.3vh,1.15rem)] landscape:lg:text-[clamp(1.05rem,2.5vh,1.3rem)]"
+          )}
         >
+          {getInteractivesHighlight()}
+        </p>
+      </FactCard>
+      <FactCard variant={variant}>
+        <p
+          className={cn(
+            "font-semibold leading-snug text-white",
+            isPortrait
+              ? "text-[clamp(0.85rem,2.2vh,1rem)]"
+              : "text-[clamp(0.95rem,2.3vh,1.15rem)] landscape:lg:text-[clamp(1.05rem,2.5vh,1.3rem)]"
+          )}
+        >
+          {AGENCY.guidesHighlight}
+        </p>
+      </FactCard>
+      {AGENCY.stats.map((stat) => (
+        <FactCard key={stat.label} variant={variant}>
           <p
             className={cn(
               "font-bold leading-tight text-white",
               isPortrait
-                ? "text-[clamp(1.35rem,3.8vh,1.75rem)]"
-                : "text-[clamp(1.125rem,2.8vh,1.5rem)]"
+                ? "text-[clamp(1.1rem,3vh,1.45rem)]"
+                : "text-[clamp(1.2rem,3.2vh,1.65rem)] landscape:lg:text-[clamp(1.35rem,3.6vh,1.9rem)]"
             )}
           >
             {stat.value}
@@ -94,72 +167,57 @@ function HighlightsGrid({ variant }: { variant: "portrait" | "landscape" }) {
             className={cn(
               "mt-0.5 leading-tight text-white/75",
               isPortrait
-                ? "text-[clamp(0.8rem,2vh,1rem)]"
-                : "text-[clamp(0.7rem,1.6vh,0.875rem)]"
+                ? "text-[clamp(0.72rem,1.8vh,0.9rem)]"
+                : "text-[clamp(0.78rem,1.9vh,0.95rem)] landscape:lg:text-[clamp(0.85rem,2vh,1.05rem)]"
             )}
           >
             {stat.label}
           </p>
-        </div>
+        </FactCard>
       ))}
     </div>
   );
 }
 
-function CtaBlock({ variant }: { variant: "portrait" | "landscape" }) {
-  const isPortrait = variant === "portrait";
-
+function QrFrame({ className }: { className?: string }) {
   return (
     <div
       className={cn(
-        "flex w-full shrink-0 items-center justify-center",
-        isPortrait ? "flex-col gap-3" : "flex-row gap-5"
+        "overflow-hidden rounded-3xl bg-white p-2 shadow-2xl shadow-violet-900/50 ring-4 ring-amber-400/80",
+        "landscape:lg:p-2.5 landscape:xl:p-3",
+        className
       )}
     >
-      <p
-        className={cn(
-          "font-bold leading-snug text-amber-300",
-          isPortrait
-            ? "text-center text-[clamp(1.35rem,4vh,2rem)]"
-            : "max-w-[14rem] flex-1 text-right text-[clamp(1.125rem,3.2vh,1.75rem)]"
-        )}
-      >
-        {AGENCY.immerseCta}
-      </p>
-
-      {!isPortrait && (
-        <ArrowRight
-          className="size-14 shrink-0 text-amber-400"
-          strokeWidth={2.5}
-          aria-hidden
-        />
-      )}
-
-      <div className="flex shrink-0">
-        <div
-          className={cn(
-            "rounded-2xl bg-white p-2 shadow-2xl shadow-violet-900/50 ring-4 ring-amber-400/80",
-            isPortrait && "rounded-3xl p-2.5"
-          )}
-        >
-          <img
-            src={qrPhoneSvg}
-            alt=""
-            className={cn(
-              "h-auto",
-              isPortrait ? "w-[min(52vw,240px)]" : "w-[min(200px,22vw)]"
-            )}
-            width={696}
-            height={696}
-            decoding="async"
-          />
-        </div>
-      </div>
+      <img
+        src={qrPhoneSvg}
+        alt=""
+        className="block h-auto w-full"
+        width={696}
+        height={696}
+        decoding="async"
+      />
     </div>
   );
 }
 
-function AdFooter({ variant }: { variant: "portrait" | "landscape" }) {
+function ImmerseCta({ variant }: { variant: LayoutVariant }) {
+  const isPortrait = variant === "portrait";
+
+  return (
+    <p
+      className={cn(
+        "shrink-0 text-center font-bold leading-snug text-amber-300",
+        isPortrait
+          ? "text-[clamp(1.05rem,3vh,1.45rem)]"
+          : "text-[clamp(1.25rem,3.5vh,1.85rem)] landscape:lg:text-[clamp(1.5rem,4vh,2.25rem)] landscape:xl:text-[clamp(1.75rem,4.5vh,2.75rem)]"
+      )}
+    >
+      {AGENCY.immerseCta}
+    </p>
+  );
+}
+
+function AdFooter({ variant }: { variant: LayoutVariant }) {
   if (!AGENCY.phoneDisplay && !AGENCY.websiteLabel) return null;
 
   const isPortrait = variant === "portrait";
@@ -168,7 +226,7 @@ function AdFooter({ variant }: { variant: "portrait" | "landscape" }) {
     <div
       className={cn(
         "flex shrink-0 flex-col gap-2",
-        isPortrait ? "items-start gap-2.5" : "items-center landscape:items-start"
+        isPortrait ? "items-center pb-0.5" : "items-center"
       )}
     >
       {AGENCY.phoneDisplay ? (
@@ -176,11 +234,17 @@ function AdFooter({ variant }: { variant: "portrait" | "landscape" }) {
           className={cn(
             "inline-flex items-center gap-2 font-extrabold text-white",
             isPortrait
-              ? "text-[clamp(1.75rem,5vh,2.25rem)]"
-              : "text-[clamp(1.5rem,4vh,2rem)]"
+              ? "text-[clamp(1.35rem,3.8vh,1.75rem)]"
+              : "text-[clamp(1.5rem,4vh,2rem)] landscape:lg:text-[clamp(1.75rem,4.5vh,2.35rem)]"
           )}
         >
-          <Phone className="size-7 shrink-0 portrait:size-8" aria-hidden />
+          <Phone
+            className={cn(
+              "shrink-0",
+              isPortrait ? "size-6 portrait:size-7" : "size-7 landscape:lg:size-8"
+            )}
+            aria-hidden
+          />
           {AGENCY.phoneDisplay}
         </p>
       ) : null}
@@ -189,11 +253,11 @@ function AdFooter({ variant }: { variant: "portrait" | "landscape" }) {
           "inline-flex items-center gap-2 rounded-xl bg-amber-400 px-4 py-2",
           "font-bold text-[#1a1040] shadow-lg shadow-amber-400/30",
           isPortrait
-            ? "px-5 py-2.5 text-lg"
-            : "text-[clamp(0.95rem,2.2vh,1.05rem)]"
+            ? "text-base"
+            : "text-[clamp(0.95rem,2.2vh,1.1rem)] landscape:lg:px-5 landscape:lg:py-2.5 landscape:lg:text-lg"
         )}
       >
-        <Globe className="size-5 portrait:size-6" aria-hidden />
+        <Globe className={cn(isPortrait ? "size-5" : "size-5 landscape:lg:size-6")} aria-hidden />
         {AGENCY.websiteLabel}
       </p>
     </div>
@@ -202,11 +266,12 @@ function AdFooter({ variant }: { variant: "portrait" | "landscape" }) {
 
 function PortraitLayout() {
   return (
-    <div className="flex h-full min-h-0 w-full flex-col justify-between gap-3 portrait:flex landscape:hidden">
-      <AdHeader className="text-left" />
-      <div className="flex min-h-0 flex-1 flex-col justify-evenly gap-4">
-        <HighlightsGrid variant="portrait" />
-        <CtaBlock variant="portrait" />
+    <div className="flex h-full min-h-0 w-full flex-col gap-2 portrait:flex landscape:hidden">
+      <AdHeader variant="portrait" />
+      <HighlightsGrid variant="portrait" />
+      <div className="flex min-h-0 w-full flex-1 flex-col items-center justify-center gap-2 py-1">
+        <ImmerseCta variant="portrait" />
+        <QrFrame className="w-[min(44vw,200px)]" />
       </div>
       <AdFooter variant="portrait" />
     </div>
@@ -215,13 +280,16 @@ function PortraitLayout() {
 
 function LandscapeLayout() {
   return (
-    <div className="hidden h-full min-h-0 w-full flex-col justify-between gap-3 landscape:flex">
-      <AdHeader className="text-left" />
-      <div className="flex min-h-0 flex-1 flex-col justify-center gap-5">
+    <div className="hidden h-full min-h-0 w-full landscape:grid landscape:grid-cols-[minmax(0,1.15fr)_minmax(0,0.85fr)] landscape:items-center landscape:gap-6 landscape:lg:gap-10 landscape:xl:gap-14">
+      <div className="flex min-h-0 flex-col justify-center gap-3 landscape:lg:gap-4 landscape:xl:gap-5">
+        <AdHeader variant="landscape" />
         <HighlightsGrid variant="landscape" />
-        <CtaBlock variant="landscape" />
       </div>
-      <AdFooter variant="landscape" />
+      <div className="flex min-h-0 flex-col items-center justify-center gap-4 landscape:lg:gap-5 landscape:xl:gap-6">
+        <ImmerseCta variant="landscape" />
+        <QrFrame className="w-[min(24vh,220px)] landscape:lg:w-[min(28vh,280px)] landscape:xl:w-[min(32vh,320px)]" />
+        <AdFooter variant="landscape" />
+      </div>
     </div>
   );
 }
@@ -231,8 +299,9 @@ export function AgencyAdScreen({ onScreenTap }: AgencyAdScreenProps) {
     <KioskScreen
       className="relative h-full min-h-0 cursor-pointer overflow-hidden bg-[#0c0824]"
       contentClassName={cn(
-        "relative mx-auto flex h-full w-full min-h-0 max-w-5xl flex-col",
-        "!gap-0 !p-3 portrait:!py-2 landscape:!p-4 landscape:lg:!p-6"
+        "relative mx-auto flex h-full w-full min-h-0 flex-col",
+        "max-w-5xl !gap-0 !p-3 portrait:!py-2",
+        "landscape:max-w-6xl landscape:!p-4 landscape:lg:max-w-7xl landscape:lg:!p-8 landscape:xl:max-w-[88rem] landscape:xl:!p-10"
       )}
     >
       <button
@@ -242,11 +311,11 @@ export function AgencyAdScreen({ onScreenTap }: AgencyAdScreenProps) {
         onClick={onScreenTap}
       />
       <div
-        className="pointer-events-none absolute -right-20 -top-20 size-56 rounded-full bg-violet-500/30 blur-3xl sm:size-72"
+        className="pointer-events-none absolute -right-20 -top-20 size-56 rounded-full bg-violet-500/30 blur-3xl sm:size-72 landscape:lg:size-96"
         aria-hidden
       />
       <div
-        className="pointer-events-none absolute -bottom-24 -left-12 size-64 rounded-full bg-fuchsia-500/25 blur-3xl sm:size-80"
+        className="pointer-events-none absolute -bottom-24 -left-12 size-64 rounded-full bg-fuchsia-500/25 blur-3xl sm:size-80 landscape:lg:size-96"
         aria-hidden
       />
 

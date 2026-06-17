@@ -96,9 +96,9 @@ const styles: NeuroStyle[] = [
     ],
   },
   {
-    id: "mem",
-    name: "Мем",
-    coverSrc: "/static/neuro_styles/mem.png",
+    id: "simpsons",
+    name: "Симпсоны",
+    coverSrc: "/static/neuro_styles/simpsons.png",
   },
   {
     id: "tatar",
@@ -200,21 +200,24 @@ export function NeuralBox() {
         compact
         centered={false}
         title="Нейростилист"
-        subtitle="Преобразите своё лицо в разных стилях и мемах"
+        subtitle="Преобразите своё лицо в разных стилях"
         icon={<Box />}
+        className="max-md:mb-2"
       />
 
       <KioskBody>
-        <div className="mx-auto max-w-6xl">
-          <div className="grid grid-cols-2 gap-3 md:grid-cols-3 md:gap-4">
+        <div className="mx-auto w-full max-w-6xl max-md:w-[95%]">
+          <div className="mx-auto grid w-full grid-cols-2 gap-1.5 md:max-w-6xl md:grid-cols-3 md:gap-4">
             {styles.map((style) => (
               <SelectionCard
                 key={style.id}
+                variant="compact"
                 title={style.name}
                 coverSrc={style.coverSrc}
                 coverAlt={style.name}
                 selected={activeStyleId === style.id && pickerOpen}
                 onPress={() => openStylePicker(style.id)}
+                className="max-md:gap-1 max-md:[&_p]:text-xs"
               />
             ))}
           </div>
@@ -232,7 +235,7 @@ export function NeuralBox() {
             <>
               <DialogHeader className="items-center gap-3 text-center sm:items-center sm:text-center">
                 {activeStyle.coverSrc ? (
-                  <div className="size-24 overflow-hidden rounded-xl bg-default-100">
+                  <div className="size-24 overflow-hidden rounded-xl bg-white">
                     <img
                       src={activeStyle.coverSrc}
                       alt={activeStyle.name}

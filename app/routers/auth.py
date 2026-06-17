@@ -6,6 +6,7 @@ from app.dependencies import DbSession, SecurityDep
 from app.models.enums import KioskId
 from app.models.pydantic_schemas import (
     KioskStatusResponse,
+    KioskValidateResponse,
     LoginRequest,
     LoginResponse,
     LogoutRequest,
@@ -30,6 +31,16 @@ async def kiosk_status(
     )
 
 
+@router.get("/validate", response_model=KioskValidateResponse)
+async def validate_kiosk_token(
+    security: SecurityDep,
+    kiosk_token: str = Query(..., description="Текущий kiosk_token с фронта"),
+) -> KioskValidateResponse:
+    """Проверка живости сессии гида по token (не по слоту киоска)."""
+    auth = await security.get_kiosk_auth(kiosk_token)
+    return KioskValidateResponse(valid=True, kiosk_id=auth.kiosk_id)
+
+
 @router.post("/login", response_model=LoginResponse)
 async def login(
     body: LoginRequest,
@@ -50,7 +61,7 @@ async def login(
         db,
         "kiosk_login",
         kiosk_id=body.kiosk_id.value,
-        message=f"Agency {body.agency_id.value}, auth until {auth.expires_at_msk}",
+        message=f"Agency {body.agency_id.value}, kiosk session started",
     )
     return LoginResponse(
         kiosk_token=auth.kiosk_token,

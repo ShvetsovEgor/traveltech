@@ -20,7 +20,7 @@ const artistStyles = [
   {
     id: "rembrandt",
     name: "Рембрандт",
-    coverSrc: "/static/artists/rembrandt.jpg",
+    coverSrc: "/static/artists/rembrandt.png",
     coverFit: "cover",
     description: "Светотень",
   },
@@ -29,12 +29,12 @@ const artistStyles = [
     name: "Ван Гог",
     coverSrc: "/static/artists/vangoch.jpg",
     coverFit: "cover",
-    description: "Постимпрессионизм",
+    description: "Постимпрессия",
   },
   {
     id: "picasso",
     name: "Пикассо",
-    coverSrc: "/static/artists/picasso.jpg",
+    coverSrc: "/static/artists/picasso.png",
     description: "Кубизм",
   },
   {
@@ -46,8 +46,15 @@ const artistStyles = [
   {
     id: "kandinsky",
     name: "Кандинский",
-    coverSrc: "/static/artists/kandinsky.jpg",
+    coverSrc: "/static/artists/kandinsky.png",
     description: "Абстракция",
+  },
+  {
+    id: "aivasovsky",
+    name: "Айвазовский",
+    coverSrc: "/static/artists/aivasovsky.png",
+    coverFit: "cover",
+    description: "Морской романтизм",
   },
   {
     id: "lego",
@@ -84,10 +91,11 @@ export function NeuralArtist() {
       />
 
       <KioskBody>
-        <div className="mx-auto grid w-full max-w-6xl grid-cols-2 gap-3 sm:grid-cols-3 sm:gap-4 md:gap-5">
+        <div className="mx-auto grid w-full max-w-5xl grid-cols-3 gap-2 sm:grid-cols-4 sm:gap-3 md:grid-cols-5">
           {artistStyles.map((style) => (
             <SelectionCard
               key={style.id}
+              variant="compact"
               title={style.name}
               description={style.description}
               coverSrc={style.coverSrc}

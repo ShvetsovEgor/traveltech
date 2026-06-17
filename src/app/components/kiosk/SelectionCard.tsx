@@ -17,6 +17,8 @@ type SelectionCardProps = {
   onPress?: () => void;
   className?: string;
   children?: ReactNode;
+  /** compact — без обёртки Card, только фото и подпись */
+  variant?: "default" | "compact";
 };
 
 export function SelectionCard({
@@ -33,10 +35,54 @@ export function SelectionCard({
   onPress,
   className,
   children,
+  variant = "default",
 }: SelectionCardProps) {
   const withEmoji = Boolean(emoji);
   const withCover = Boolean(coverSrc);
   const centered = withEmoji || withCover;
+
+  if (variant === "compact" && coverSrc) {
+    return (
+      <button
+        type="button"
+        className={cn(
+          "flex w-full flex-col items-center gap-1.5 text-center transition-transform duration-300 active:scale-95",
+          disabled && "cursor-not-allowed opacity-50 pointer-events-none",
+          className
+        )}
+        disabled={disabled}
+        onClick={disabled ? undefined : onPress}
+      >
+        <div
+          className={cn(
+            "aspect-square w-full overflow-hidden rounded-2xl bg-white transition-shadow",
+            selected && "shadow-lg ring-2 ring-accent"
+          )}
+        >
+          <img
+            src={coverSrc}
+            alt={coverAlt || title}
+            className={cn(
+              "size-full",
+              coverFit === "cover" ? "object-cover" : "object-contain"
+            )}
+            draggable={false}
+          />
+        </div>
+        <div className="w-full px-0.5">
+          <p className="text-sm font-semibold leading-tight text-foreground sm:text-base">
+            {title}
+          </p>
+          {description && (
+            <p className="mt-0.5 line-clamp-2 break-words text-[10px] leading-tight text-muted-foreground sm:text-xs">
+              {description}
+            </p>
+          )}
+        </div>
+        {children}
+      </button>
+    );
+  }
 
   return (
     <Card
@@ -51,7 +97,7 @@ export function SelectionCard({
       onClick={disabled ? undefined : onPress}
     >
       {coverSrc && (
-        <div className="mx-auto mb-2 aspect-square w-[82%] max-w-[10.5rem] overflow-hidden rounded-xl bg-default-100 sm:max-w-[11.5rem]">
+        <div className="mx-auto mb-2 aspect-square w-[82%] max-w-[10.5rem] overflow-hidden rounded-xl bg-white sm:max-w-[11.5rem]">
           <img
             src={coverSrc}
             alt={coverAlt || title}

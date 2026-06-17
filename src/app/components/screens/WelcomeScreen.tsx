@@ -9,7 +9,7 @@ import {
 } from "../../config/kiosk";
 import type { InteractiveItem } from "../../config/kiosk";
 import { getKioskIdFromSearch } from "../../utils/kioskLocation";
-import { InteractiveStrip, KioskScreen, NetworkStatusLine } from "../kiosk";
+import { InteractiveStrip, KioskScreen, NetworkStatusLine, TravelTechHeading } from "../kiosk";
 
 export function WelcomeScreen() {
   const navigate = useNavigate();
@@ -39,12 +39,7 @@ export function WelcomeScreen() {
         className="items-center justify-center bg-accent"
         contentClassName="flex items-center justify-center"
       >
-        <Typography.Heading
-          level={1}
-          className="mb-4 text-3xl text-accent-foreground sm:text-4xl"
-        >
-          TravelTech
-        </Typography.Heading>
+        <TravelTechHeading className="mb-4 text-3xl text-accent-foreground sm:text-4xl" />
         <Typography.Paragraph className="max-w-lg text-center text-lg text-accent-foreground/90 sm:text-xl">
           Укажите киоск в адресе:{" "}
           <Typography.Code className="rounded bg-accent-foreground/20 px-2 py-1">
@@ -62,12 +57,7 @@ export function WelcomeScreen() {
     >
       <header className="shrink-0 text-left">
         <div className="flex items-center justify-start gap-2 sm:gap-3">
-          <Typography.Heading
-            level={1}
-            className="text-2xl font-bold text-white sm:text-3xl md:text-4xl"
-          >
-            TravelTech
-          </Typography.Heading>
+          <TravelTechHeading className="text-2xl font-bold text-white sm:text-3xl md:text-4xl" />
           <Sparkles
             className="size-7 shrink-0 text-white sm:size-8 md:size-9"
             aria-hidden

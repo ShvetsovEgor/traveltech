@@ -7,8 +7,10 @@ import { useKiosk } from "../../context/KioskContext";
 import { useTaskPolling } from "../../hooks/useTaskPolling";
 import {
   clearPendingArtistSketch,
-  getPendingArtistSketch,
+  getPendingArtistSketchDataUrl,
+  getPendingArtistSketchStyle,
 } from "../../utils/artistSketchSession";
+import { dataUrlToFile } from "../../utils/media";
 import { KioskScreen, LoadingStepsList } from "../kiosk";
 
 const loadingSteps = [
@@ -17,52 +19,99 @@ const loadingSteps = [
   { icon: Sparkles, text: "Добавляем детали..." },
 ];
 
-function resolveSketchFile(locationState: unknown): File | null {
-  const fromState = (locationState as { sketchFile?: unknown } | null)?.sketchFile;
-  if (fromState instanceof File) return fromState;
-  return getPendingArtistSketch();
+const ARTIST_GEN_LOCK_KEY = "traveltech_artist_gen_task";
+const ARTIST_GEN_PENDING = "__pending__";
+
+async function resolveSketchFile(locationState: unknown): Promise<File | null> {
+  const state = (locationState ?? {}) as { sketchDataUrl?: string };
+  const dataUrl = state.sketchDataUrl || getPendingArtistSketchDataUrl();
+  if (!dataUrl) return null;
+  return dataUrlToFile(dataUrl, "sketch.jpg");
 }
 
 export function NeuralArtistLoading() {
   const navigate = useNavigate();
   const location = useLocation();
-  const { interactionToken, ensureInteraction } = useKiosk();
-  const style = location.state?.style || "vangogh";
+  const { ensureInteraction, interactionToken } = useKiosk();
+  const state = (location.state ?? {}) as { style?: string };
+  const style =
+    state.style || getPendingArtistSketchStyle() || "vangogh";
 
-  const sketchRef = useRef<File | null | undefined>(undefined);
-  if (sketchRef.current === undefined) {
-    sketchRef.current = resolveSketchFile(location.state);
-  }
-  const sketchFile = sketchRef.current;
-
+  const [sketchFile, setSketchFile] = useState<File | null | undefined>(
+    undefined
+  );
   const [taskId, setTaskId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [starting, setStarting] = useState(true);
+  const generationStartedRef = useRef(false);
+  const ensureInteractionRef = useRef(ensureInteraction);
+  ensureInteractionRef.current = ensureInteraction;
 
   useEffect(() => {
+    let cancelled = false;
+
+    (async () => {
+      const file = await resolveSketchFile(location.state);
+      if (!cancelled) {
+        setSketchFile(file);
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [location.state]);
+
+  useEffect(() => {
+    if (sketchFile === undefined) return;
+
     if (!sketchFile) {
       setStarting(false);
       setError("Набросок не найден. Нарисуйте его ещё раз.");
       return;
     }
 
+    const existingLock = sessionStorage.getItem(ARTIST_GEN_LOCK_KEY);
+    if (existingLock && existingLock !== ARTIST_GEN_PENDING) {
+      setTaskId(existingLock);
+      setStarting(false);
+      return;
+    }
+
+    if (existingLock === ARTIST_GEN_PENDING) {
+      setStarting(true);
+      const pollId = window.setInterval(() => {
+        const value = sessionStorage.getItem(ARTIST_GEN_LOCK_KEY);
+        if (value && value !== ARTIST_GEN_PENDING) {
+          setTaskId(value);
+          setStarting(false);
+          window.clearInterval(pollId);
+        }
+      }, 250);
+      return () => window.clearInterval(pollId);
+    }
+
+    if (generationStartedRef.current) return;
+    generationStartedRef.current = true;
+    sessionStorage.setItem(ARTIST_GEN_LOCK_KEY, ARTIST_GEN_PENDING);
+
     let cancelled = false;
 
     (async () => {
       try {
-        let token = interactionToken;
-        if (!token) {
-          token = await ensureInteraction("neuro_artist");
-        }
+        const token = await ensureInteractionRef.current("neuro_artist");
         if (cancelled) return;
 
         const res = await api.artistGenerate(sketchFile, style, token);
         if (!cancelled) {
+          sessionStorage.setItem(ARTIST_GEN_LOCK_KEY, res.task_id);
           clearPendingArtistSketch();
           setTaskId(res.task_id);
           setStarting(false);
         }
       } catch (e) {
+        generationStartedRef.current = false;
+        sessionStorage.removeItem(ARTIST_GEN_LOCK_KEY);
         if (!cancelled) {
           setStarting(false);
           setError(e instanceof Error ? e.message : "Ошибка запуска генерации");
@@ -73,13 +122,18 @@ export function NeuralArtistLoading() {
     return () => {
       cancelled = true;
     };
-  }, [sketchFile, interactionToken, style, ensureInteraction]);
+  }, [sketchFile, style]);
 
   useTaskPolling(taskId, interactionToken, {
     onComplete: (resultUrl) => {
+      sessionStorage.removeItem(ARTIST_GEN_LOCK_KEY);
       navigate("/neural-artist/result", { state: { style, resultUrl } });
     },
-    onError: (message) => setError(message),
+    onError: (message) => {
+      sessionStorage.removeItem(ARTIST_GEN_LOCK_KEY);
+      generationStartedRef.current = false;
+      setError(message);
+    },
   });
 
   if (error) {
@@ -91,7 +145,11 @@ export function NeuralArtistLoading() {
         <Typography.Paragraph className="text-xl mb-6">{error}</Typography.Paragraph>
         <Button
           variant="primary"
-          onPress={() => navigate("/neural-artist/sketch", { state: { style } })}
+          onPress={() => {
+            sessionStorage.removeItem(ARTIST_GEN_LOCK_KEY);
+            generationStartedRef.current = false;
+            navigate("/neural-artist/sketch", { state: { style } });
+          }}
         >
           Попробовать снова
         </Button>

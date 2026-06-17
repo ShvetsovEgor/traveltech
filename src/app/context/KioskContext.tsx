@@ -50,6 +50,7 @@ type KioskContextValue = {
   logout: () => Promise<void>;
   ensureInteraction: (appType: AppType) => Promise<string>;
   clearInteraction: () => void;
+  deactivateKiosk: () => void;
 };
 
 const KioskContext = createContext<KioskContextValue | null>(null);
@@ -61,13 +62,13 @@ export function KioskProvider({ children }: { children: ReactNode }) {
   const [interactionToken, setInteractionToken] = useState<string | null>(null);
   const [appType, setAppType] = useState<AppType | null>(null);
   const bootstrapGenRef = useRef(0);
+  const logoutInProgressRef = useRef(false);
 
   const clearKioskAuth = useCallback(() => {
     setKioskToken(null);
     setInteractionToken(null);
     setAppType(null);
     sessionStorage.removeItem(KIOSK_TOKEN_KEY);
-    sessionStorage.removeItem("traveltech_guide_auth_success");
   }, []);
 
   const applyRemoteAuth = useCallback((token: string, id: KioskId) => {
@@ -89,14 +90,18 @@ export function KioskProvider({ children }: { children: ReactNode }) {
 
   const logout = useCallback(async () => {
     const token = kioskToken;
-    if (token) {
+    if (!token || logoutInProgressRef.current) return;
+    logoutInProgressRef.current = true;
+    try {
       try {
         await api.logout(token);
       } catch {
         /* clear local state even if backend is unreachable */
       }
+      clearKioskAuth();
+    } finally {
+      logoutInProgressRef.current = false;
     }
-    clearKioskAuth();
   }, [kioskToken, clearKioskAuth]);
 
   const ensureInteraction = useCallback(
@@ -151,8 +156,13 @@ export function KioskProvider({ children }: { children: ReactNode }) {
 
         if (status.active && status.kiosk_token) {
           applyRemoteAuth(status.kiosk_token, status.kiosk_id);
-        } else if (!isGuideAuthPath()) {
-          clearKioskAuth();
+        } else {
+          const stored = sessionStorage.getItem(KIOSK_TOKEN_KEY);
+          if (stored) {
+            setKioskToken(stored);
+          } else if (!isGuideAuthPath()) {
+            clearKioskAuth();
+          }
         }
       } catch {
         if (cancelled || generation !== bootstrapGenRef.current) return;
@@ -199,6 +209,7 @@ export function KioskProvider({ children }: { children: ReactNode }) {
       logout,
       ensureInteraction,
       clearInteraction,
+      deactivateKiosk: clearKioskAuth,
     }),
     [
       kioskToken,
@@ -211,6 +222,7 @@ export function KioskProvider({ children }: { children: ReactNode }) {
       logout,
       ensureInteraction,
       clearInteraction,
+      clearKioskAuth,
     ]
   );
 

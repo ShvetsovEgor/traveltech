@@ -73,3 +73,22 @@ def cleanup_upload_dir(interaction_token: str) -> None:
 def cleanup_upload_file(path: Path) -> None:
     if path.exists():
         path.unlink(missing_ok=True)
+
+
+def task_input_dir(task_id: str) -> Path:
+    path = Path(get_settings().upload_base_dir) / "tasks" / task_id
+    path.mkdir(parents=True, exist_ok=True)
+    return path
+
+
+def copy_to_task_input(task_id: str, source: Path) -> Path:
+    """Copy upload into a task-scoped folder so generation survives session cleanup."""
+    dest = task_input_dir(task_id) / f"input{source.suffix}"
+    shutil.copy2(source, dest)
+    return dest
+
+
+def cleanup_task_input(task_id: str) -> None:
+    path = Path(get_settings().upload_base_dir) / "tasks" / task_id
+    if path.exists():
+        shutil.rmtree(path, ignore_errors=True)

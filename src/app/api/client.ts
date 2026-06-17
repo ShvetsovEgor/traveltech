@@ -5,6 +5,7 @@ import type {
   InteractionStartResponse,
   KioskId,
   KioskStatusResponse,
+  KioskValidateResponse,
   LoginResponse,
   TaskStatusResponse,
   DashboardResponse,
@@ -63,6 +64,12 @@ export const api = {
   getKioskStatus(kioskId: KioskId) {
     return request<KioskStatusResponse>(
       `/api/auth/status?kiosk_id=${encodeURIComponent(kioskId)}`
+    );
+  },
+
+  validateKioskToken(kioskToken: string) {
+    return request<KioskValidateResponse>(
+      `/api/auth/validate?kiosk_token=${encodeURIComponent(kioskToken)}`
     );
   },
 

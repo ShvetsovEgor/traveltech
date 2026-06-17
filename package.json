@@ -5,7 +5,8 @@
   "type": "module",
   "scripts": {
     "build": "vite build",
-    "dev": "vite"
+    "dev": "vite",
+    "dev:api": ".venv/bin/python3 -m uvicorn app.main:app --host 127.0.0.1 --port 8000 --reload"
   },
   "dependencies": {
     "@heroui/react": "3.0.5",

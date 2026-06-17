@@ -1,19 +1,21 @@
-/** Набросок для ИИ-творца между экранами sketch → loading (в памяти вкладки). */
-let pendingSketch: File | null = null;
+const ARTIST_SKETCH_KEY = "traveltech_artist_sketch";
+const ARTIST_SKETCH_STYLE_KEY = "traveltech_artist_sketch_style";
 
-export function setPendingArtistSketch(file: File): void {
-  pendingSketch = file;
+/** Набросок для ИИ-творца между экранами sketch → loading. */
+export function setPendingArtistSketch(dataUrl: string, style: string): void {
+  sessionStorage.setItem(ARTIST_SKETCH_KEY, dataUrl);
+  sessionStorage.setItem(ARTIST_SKETCH_STYLE_KEY, style);
 }
 
-export function getPendingArtistSketch(): File | null {
-  return pendingSketch;
+export function getPendingArtistSketchDataUrl(): string | null {
+  return sessionStorage.getItem(ARTIST_SKETCH_KEY);
 }
 
-/** @deprecated Используйте getPendingArtistSketch — не снимайте файл при рендере */
-export function takePendingArtistSketch(): File | null {
-  return getPendingArtistSketch();
+export function getPendingArtistSketchStyle(): string | null {
+  return sessionStorage.getItem(ARTIST_SKETCH_STYLE_KEY);
 }
 
 export function clearPendingArtistSketch(): void {
-  pendingSketch = null;
+  sessionStorage.removeItem(ARTIST_SKETCH_KEY);
+  sessionStorage.removeItem(ARTIST_SKETCH_STYLE_KEY);
 }

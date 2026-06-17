@@ -6,6 +6,21 @@ const DEFAULT_POLL_MS = 3000;
 /** Видео Veo — долго; не срываемся из‑за одного сетевого сбоя опроса. */
 const MAX_POLL_FAILURES = 10;
 
+function formatTaskError(message: string): string {
+  const lowered = message.toLowerCase();
+  if (lowered.includes("location is not supported")) {
+    return "Сервис генерации временно недоступен. Подождите немного и попробуйте снова.";
+  }
+  if (
+    lowered.includes("failed_precondition") ||
+    lowered.includes("503") ||
+    lowered.includes("unavailable")
+  ) {
+    return "Сервис перегружен. Подождите и попробуйте снова.";
+  }
+  return message;
+}
+
 export function useTaskPolling(
   taskId: string | null,
   interactionToken: string | null,
@@ -113,7 +128,7 @@ export function useTaskPolling(
             });
           }
           handlersRef.current.onError(
-            status.error_message ?? "Генерация не удалась"
+            formatTaskError(status.error_message ?? "Генерация не удалась")
           );
         }
       } catch (e) {

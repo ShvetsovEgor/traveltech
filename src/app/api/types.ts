@@ -9,7 +9,7 @@ export type TaskStatus = "processing" | "completed" | "failed" | "cancelled";
 export interface LoginResponse {
   kiosk_token: string;
   kiosk_id: KioskId;
-  expires_at_msk: string;
+    expires_at_msk: string | null;
 }
 
 export interface KioskStatusResponse {
@@ -17,6 +17,11 @@ export interface KioskStatusResponse {
   kiosk_id: KioskId;
   kiosk_token: string | null;
   expires_at_msk: string | null;
+}
+
+export interface KioskValidateResponse {
+  valid: boolean;
+  kiosk_id: KioskId;
 }
 
 export interface InteractionStartResponse {

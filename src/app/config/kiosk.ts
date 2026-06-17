@@ -26,7 +26,7 @@ export const INTERACTIVE_ITEMS: InteractiveItem[] = [
   },
   {
     title: "Нейростилист",
-    description: "Стилизация лица и мемы",
+    description: "Стилизация лица в разных образах",
     icon: Box,
     path: "/neural-box",
     appType: "neurobox",
@@ -47,7 +47,7 @@ export const INTERACTIVE_ITEMS: InteractiveItem[] = [
   },
   {
     title: "Мини-игры",
-    description: "Миссия Мин-Тимера и лидарная симуляция",
+    description: "Миссия Мин-Тимера",
     icon: Gamepad2,
     path: "/mini-games",
   },

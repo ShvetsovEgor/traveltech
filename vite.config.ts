@@ -19,6 +19,16 @@ function figmaAssetResolver() {
 
 export default defineConfig({
   server: {
+    // Backend writes data/app_events.jsonl on login/logout — must not reload the UI.
+    watch: {
+      ignored: [
+        '**/data/**',
+        '**/*.db',
+        '**/logs/**',
+        '**/static/results/**',
+        '**/__pycache__/**',
+      ],
+    },
     proxy: {
       '/api': 'http://127.0.0.1:8000',
       '/static': 'http://127.0.0.1:8000',

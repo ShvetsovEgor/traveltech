@@ -171,17 +171,41 @@ class PromptEngine:
     @staticmethod
     def build_artist_prompt(style_id: str, extra_options: list[str] | None = None) -> str:
         catalog, cfg = PromptEngine._style_cfg("artist_styles", style_id)
-        parts = [cfg["base"]]
+        technical = catalog["technical"]
+        no_sketch = technical.get("artist_no_sketch_lines", "")
+        sketch_base = technical.get("artist_sketch_base", "")
+        structure = cfg.get("structure_preserve") or technical.get(
+            "artist_structure_preserve", ""
+        )
+        parts = [no_sketch, sketch_base, cfg["base"]]
         signature = cfg.get("signature_elements")
         if signature:
             parts.append(signature)
-        structure = cfg.get("structure_preserve")
         if structure:
             parts.append(structure)
         if extra_options:
             parts.append(", ".join(extra_options))
-        parts.append(catalog["technical"]["image"])
-        return " ".join(parts)
+        parts.append(sketch_base)
+        parts.append(no_sketch)
+        parts.append(technical.get("artist_image", technical["image"]))
+        return " ".join(p for p in parts if p)
+
+    @staticmethod
+    def build_artist_fallback_prompt(style_id: str) -> str | None:
+        catalog, cfg = PromptEngine._style_cfg("artist_styles", style_id)
+        technical = catalog["technical"]
+        no_sketch = technical.get("artist_no_sketch_lines", "")
+        sketch_base = technical.get("artist_sketch_base", "")
+        structure = cfg.get("structure_preserve") or technical.get(
+            "artist_structure_preserve", ""
+        )
+        fallback = str(cfg.get("fallback_prompt", "")).strip()
+        if fallback:
+            return f"{no_sketch} {sketch_base} {fallback} {structure} {no_sketch}"
+        return (
+            f"{no_sketch} {sketch_base} {cfg['base']} {structure} "
+            f"{technical.get('artist_image', technical['image'])} {no_sketch}"
+        )
 
     @staticmethod
     def build_neurobox_prompt(
@@ -284,7 +308,12 @@ class PromptEngine:
                 )
             )
         else:
-            parts.append(catalog["technical"]["portrait"])
+            technical_key = cfg.get("technical_key", "portrait")
+            parts.append(
+                catalog["technical"].get(
+                    technical_key, catalog["technical"]["portrait"]
+                )
+            )
         return " ".join(parts)
 
     @staticmethod

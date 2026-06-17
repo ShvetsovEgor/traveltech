@@ -37,8 +37,7 @@ class Settings(BaseSettings):
     # Redis
     redis_url: str = "redis://localhost:6379/0"
 
-    # Auth
-    kiosk_token_ttl_hours: int = 8
+    # Auth (kiosk session ends only on explicit logout or frontend idle timeout)
     interaction_heartbeat_timeout_seconds: int = 120
     session_cleanup_interval_seconds: int = 30
 

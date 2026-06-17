@@ -15,7 +15,7 @@ class LoginRequest(BaseModel):
 class LoginResponse(BaseModel):
     kiosk_token: str
     kiosk_id: KioskId
-    expires_at_msk: str
+    expires_at_msk: str | None = None
 
 
 class KioskStatusResponse(BaseModel):
@@ -31,6 +31,11 @@ class LogoutRequest(BaseModel):
 
 class LogoutResponse(BaseModel):
     ok: bool = True
+    kiosk_id: KioskId
+
+
+class KioskValidateResponse(BaseModel):
+    valid: bool = True
     kiosk_id: KioskId
 
 

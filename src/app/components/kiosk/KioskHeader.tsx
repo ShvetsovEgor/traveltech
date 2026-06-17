@@ -111,7 +111,12 @@ export function KioskHeader({
 
     return (
       <>
-        <div className={cn("shrink-0 md:hidden", compact ? "mb-2 sm:mb-3" : "mb-5 sm:mb-6")}>
+        <div
+          className={cn(
+            "shrink-0 md:hidden",
+            compact ? "mb-3 pt-2 sm:mb-4 sm:pt-3" : "mb-5 sm:mb-6"
+          )}
+        >
           <header className={cn("pl-10 sm:pl-12", className)}>
             <InlineHeaderContent
               title={title}

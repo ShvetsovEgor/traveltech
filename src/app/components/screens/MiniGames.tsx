@@ -10,11 +10,9 @@ import {
 } from "../ui/dialog";
 import { useGameKeyboardForward } from "../../hooks/useGameKeyboardForward";
 import { MintimerGameFrame } from "./MintimerGameFrame";
-import { RoverLidarGameFrame } from "./RoverLidarGameFrame";
 import mintimerCover from "../../../../mintimer.png";
-import roverCover from "../../../../rover_yandex.png";
 
-type GameId = "mintimer" | "rover-lidar";
+type GameId = "mintimer";
 
 const games: {
   id: GameId;
@@ -29,13 +27,6 @@ const games: {
     description: "Прыжок и присед — управление ровером",
     coverSrc: mintimerCover,
     hint: "Верх экрана — прыжок, низ — присесть (удерживать)",
-  },
-  {
-    id: "rover-lidar",
-    name: "Лидарная симуляция Иннополиса",
-    description: "3D-ровер, LiDAR и карта города",
-    coverSrc: roverCover,
-    hint: "Стрелки — езда, L — LiDAR, 1 и 2 — смена скина",
   },
 ];
 
@@ -62,7 +53,7 @@ export function MiniGames() {
       />
 
       <KioskBody>
-        <div className="mx-auto grid max-w-4xl grid-cols-1 gap-3 sm:grid-cols-2 md:gap-4">
+        <div className="mx-auto grid max-w-md grid-cols-1 gap-3 md:gap-4">
           {games.map((game) => (
             <SelectionCard
               key={game.id}
@@ -121,18 +112,10 @@ export function MiniGames() {
               className="relative min-h-0 flex-1"
               onPointerDown={focusGame}
             >
-              {activeGame === "mintimer" && (
-                <MintimerGameFrame
-                  ref={iframeRef}
-                  className="absolute inset-0 size-full"
-                />
-              )}
-              {activeGame === "rover-lidar" && (
-                <RoverLidarGameFrame
-                  ref={iframeRef}
-                  className="absolute inset-0 size-full"
-                />
-              )}
+              <MintimerGameFrame
+                ref={iframeRef}
+                className="absolute inset-0 size-full"
+              />
             </div>
 
             {active.hint && (

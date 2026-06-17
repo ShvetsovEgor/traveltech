@@ -92,21 +92,32 @@ def _retry_wait_seconds(attempt: int) -> int:
     return 5 * (attempt + 1)
 
 
-def _retry_reason(exc: BaseException) -> str:
-    if isinstance(exc, _NETWORK_ERRORS):
-        return "Сетевой сбой"
+def _is_location_error(exc: BaseException) -> bool:
     msg = str(exc).lower()
-    if any(
-        token in msg
-        for token in ("503", "unavailable", "high demand", "429", "overloaded")
+    return "location is not supported" in msg or (
+        "failed_precondition" in msg and "location" in msg
+    )
+
+
+def _format_user_facing_error(message: str) -> str:
+    lowered = message.lower()
+    if "location is not supported" in lowered or (
+        "failed_precondition" in lowered and "location" in lowered
     ):
-        return "Сервис Gemini перегружен"
-    return "Временная ошибка API"
+        return (
+            "Сервис генерации временно недоступен. "
+            "Подождите немного и попробуйте снова."
+        )
+    if any(token in lowered for token in ("503", "unavailable", "overloaded", "429")):
+        return "Сервис перегружен. Подождите и попробуйте снова."
+    return message
 
 
 def _retry_reason(exc: BaseException) -> str:
     if isinstance(exc, _NETWORK_ERRORS):
         return "Сетевой сбой"
+    if _is_location_error(exc):
+        return "Временная ошибка региона API"
     msg = str(exc).lower()
     if any(
         token in msg
@@ -169,7 +180,7 @@ def generate_stylized_image(
     prompt: str,
     output_image_path: str = "stylized_artwork.jpeg",
     model_name: str = "gemini-2.5-flash-image",
-    max_retries: int = 2,
+    max_retries: int = 4,
     agency_label: str | None = None,
     fallback_prompt: str | None = None,
 ) -> tuple[bool, str | None]:
@@ -216,7 +227,7 @@ def generate_stylized_image(
                     time.sleep(wait)
                     continue
                 print(f"❌ Ошибка при генерации изображения: {last_error}")
-                return False, last_error
+                return False, _format_user_facing_error(last_error)
 
             with open(output_image_path, "wb") as f:
                 f.write(image_bytes)
@@ -228,7 +239,9 @@ def generate_stylized_image(
             return True, None
 
         except Exception as e:
-            if _is_retriable_error(e) and attempt < max_retries - 1:
+            if (
+                _is_retriable_error(e) or _is_location_error(e)
+            ) and attempt < max_retries - 1:
                 wait = _retry_wait_seconds(attempt)
                 print(
                     f"⚠️ {_retry_reason(e)} (попытка {attempt + 1}/{max_retries}): {e}. "
@@ -238,9 +251,9 @@ def generate_stylized_image(
                 continue
             last_error = str(e)
             print(f"❌ Ошибка при генерации изображения: {e}")
-            return False, last_error
+            return False, _format_user_facing_error(last_error)
 
-    return False, last_error or "Image generation failed"
+    return False, _format_user_facing_error(last_error or "Image generation failed")
 
 
 def _save_generated_video_file(generated_video: object, output_video_path: str) -> None:

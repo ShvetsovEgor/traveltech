@@ -5,10 +5,8 @@ import { MapPin } from "lucide-react";
 import { Card, Chip, Typography, cn } from "@heroui/react";
 import { useKiosk } from "../../context/KioskContext";
 import { KIOSK_DISPLAY_NAMES } from "../../config/kiosk";
-import { useDoubleTapAction } from "../../hooks/useDoubleTap";
-import { useFullscreen } from "../../hooks/useFullscreen";
 import { buildGuideAuthUrl, getKioskIdFromSearch } from "../../utils/kioskLocation";
-import { KioskScreen, NetworkStatusLine } from "../kiosk";
+import { KioskScreen, NetworkStatusLine, TravelTechHeading } from "../kiosk";
 
 type GuideKioskQrScreenProps = {
   onScreenTap?: () => void;
@@ -27,12 +25,6 @@ export function GuideKioskQrScreen({ onScreenTap }: GuideKioskQrScreenProps) {
     () => (effectiveKioskId ? buildGuideAuthUrl(effectiveKioskId) : ""),
     [effectiveKioskId]
   );
-
-  const { supported: fullscreenSupported, toggle: toggleFullscreen } =
-    useFullscreen();
-  const handleTravelTechDoubleTap = useDoubleTapAction(() => {
-    void toggleFullscreen();
-  });
 
   if (!effectiveKioskId) {
     return (
@@ -64,30 +56,7 @@ export function GuideKioskQrScreen({ onScreenTap }: GuideKioskQrScreenProps) {
 
       <div className="relative z-10 flex w-full flex-col items-center gap-4 pointer-events-none sm:gap-5">
         <header className="w-full text-center">
-          <Typography.Heading
-            level={1}
-            className="pointer-events-auto inline-block select-none text-2xl font-bold text-white sm:text-3xl"
-            {...(fullscreenSupported
-              ? {
-                  role: "button" as const,
-                  tabIndex: 0,
-                  "aria-label": "Двойное нажатие: полноэкранный режим",
-                  onClick: (e: React.MouseEvent) => {
-                    e.stopPropagation();
-                    handleTravelTechDoubleTap();
-                  },
-                  onKeyDown: (e: React.KeyboardEvent) => {
-                    if (e.key === "Enter" || e.key === " ") {
-                      e.preventDefault();
-                      e.stopPropagation();
-                      handleTravelTechDoubleTap();
-                    }
-                  },
-                }
-              : {})}
-          >
-            TravelTech
-          </Typography.Heading>
+          <TravelTechHeading className="inline-block text-2xl font-bold text-white sm:text-3xl" />
           <div className="mx-auto mt-2 flex w-fit flex-col items-center gap-1">
             <Chip className="flex w-fit items-center gap-2 bg-white/15 px-4 py-1.5 text-white">
               <MapPin className="size-4" aria-hidden />
