@@ -127,6 +127,45 @@ def _retry_reason(exc: BaseException) -> str:
     return "Временная ошибка API"
 
 
+def _is_overload_error(exc: BaseException) -> bool:
+    """503/429 и перегрузка — сразу переключаемся на следующую модель."""
+    msg = str(exc).lower()
+    return any(
+        token in msg
+        for token in (
+            "503",
+            "429",
+            "unavailable",
+            "high demand",
+            "overloaded",
+            "resource exhausted",
+        )
+    )
+
+
+def _parse_model_chain(primary: str, fallbacks_csv: str) -> list[str]:
+    chain: list[str] = []
+    for name in [primary, *fallbacks_csv.split(",")]:
+        n = name.strip()
+        if n and n not in chain:
+            chain.append(n)
+    return chain
+
+
+def _image_model_chain() -> list[str]:
+    from app.config import get_settings
+
+    s = get_settings()
+    return _parse_model_chain(s.gemini_image_model, s.gemini_image_model_fallbacks)
+
+
+def _video_model_chain() -> list[str]:
+    from app.config import get_settings
+
+    s = get_settings()
+    return _parse_model_chain(s.gemini_video_model, s.gemini_video_model_fallbacks)
+
+
 def _iter_response_parts(response: object) -> list[object]:
     """Collect content parts from google-genai GenerateContentResponse."""
     collected: list[object] = []
@@ -179,13 +218,14 @@ def generate_stylized_image(
     input_image_path: str,
     prompt: str,
     output_image_path: str = "stylized_artwork.jpeg",
-    model_name: str = "gemini-2.5-flash-image",
+    model_name: str | None = None,
     max_retries: int = 4,
     agency_label: str | None = None,
     fallback_prompt: str | None = None,
 ) -> tuple[bool, str | None]:
     """
     Генерирует стилизованное изображение на основе наброска/фото и промпта.
+    При 503/перегрузке переключается на следующую модель из GEMINI_IMAGE_MODEL_FALLBACKS.
     Возвращает (успех, сообщение об ошибке или None).
     """
     print("🎨 Запуск генерации изображения (ИИ-творец/Нейростилист)...")
@@ -196,62 +236,97 @@ def generate_stylized_image(
         print(f"❌ Не удалось открыть {input_image_path}: {e}")
         return False, f"Не удалось открыть фото: {e}"
 
+    models = [model_name] if model_name else _image_model_chain()
     last_error: str | None = None
 
-    for attempt in range(max_retries):
-        current_prompt = (
-            fallback_prompt
-            if attempt > 0 and fallback_prompt
-            else prompt
-        )
-        if attempt > 0 and fallback_prompt:
-            print("🔄 Повтор с упрощённым промптом (fallback)...")
-        try:
-            response = client.models.generate_content(
-                model=model_name,
-                contents=[sketch_image, current_prompt],
-                config=types.GenerateContentConfig(
-                    response_modalities=["IMAGE"]
-                ),
+    for model_idx, current_model in enumerate(models):
+        if len(models) > 1:
+            print(
+                f"🤖 Модель изображения: {current_model} "
+                f"({model_idx + 1}/{len(models)})"
             )
 
-            image_bytes = _extract_image_bytes_from_response(response)
-            if not image_bytes:
-                last_error = _describe_missing_image_response(response)
-                if attempt < max_retries - 1:
+        try_next_model = False
+        for attempt in range(max_retries):
+            current_prompt = (
+                fallback_prompt
+                if attempt > 0 and fallback_prompt
+                else prompt
+            )
+            if attempt > 0 and fallback_prompt:
+                print("🔄 Повтор с упрощённым промптом (fallback)...")
+            try:
+                response = client.models.generate_content(
+                    model=current_model,
+                    contents=[sketch_image, current_prompt],
+                    config=types.GenerateContentConfig(
+                        response_modalities=["IMAGE"]
+                    ),
+                )
+
+                image_bytes = _extract_image_bytes_from_response(response)
+                if not image_bytes:
+                    last_error = _describe_missing_image_response(response)
+                    if attempt < max_retries - 1:
+                        wait = _retry_wait_seconds(attempt)
+                        print(
+                            f"⚠️ {last_error} "
+                            f"(попытка {attempt + 1}/{max_retries}). "
+                            f"Повтор через {wait} с..."
+                        )
+                        time.sleep(wait)
+                        continue
+                    if model_idx < len(models) - 1:
+                        print(
+                            f"⚠️ {current_model} не вернула изображение — "
+                            f"пробуем {models[model_idx + 1]}"
+                        )
+                        try_next_model = True
+                        break
+                    print(f"❌ Ошибка при генерации изображения: {last_error}")
+                    return False, _format_user_facing_error(last_error)
+
+                with open(output_image_path, "wb") as f:
+                    f.write(image_bytes)
+
+                print(
+                    f"{_success_ready_prefix(agency_label)}"
+                    f"Картина сохранена как {output_image_path} "
+                    f"(модель: {current_model})"
+                )
+                return True, None
+
+            except Exception as e:
+                last_error = str(e)
+                if _is_overload_error(e) and model_idx < len(models) - 1:
+                    print(
+                        f"⚠️ {_retry_reason(e)} — переключаемся на "
+                        f"{models[model_idx + 1]}: {e}"
+                    )
+                    try_next_model = True
+                    break
+                if (
+                    _is_retriable_error(e) or _is_location_error(e)
+                ) and attempt < max_retries - 1:
                     wait = _retry_wait_seconds(attempt)
                     print(
-                        f"⚠️ {last_error} "
-                        f"(попытка {attempt + 1}/{max_retries}). Повтор через {wait} с..."
+                        f"⚠️ {_retry_reason(e)} (попытка {attempt + 1}/{max_retries}): "
+                        f"{e}. Повтор через {wait} с..."
                     )
                     time.sleep(wait)
                     continue
-                print(f"❌ Ошибка при генерации изображения: {last_error}")
+                if model_idx < len(models) - 1:
+                    print(
+                        f"⚠️ Ошибка на {current_model} — пробуем "
+                        f"{models[model_idx + 1]}: {e}"
+                    )
+                    try_next_model = True
+                    break
+                print(f"❌ Ошибка при генерации изображения: {e}")
                 return False, _format_user_facing_error(last_error)
 
-            with open(output_image_path, "wb") as f:
-                f.write(image_bytes)
-
-            print(
-                f"{_success_ready_prefix(agency_label)}"
-                f"Картина сохранена как {output_image_path}"
-            )
-            return True, None
-
-        except Exception as e:
-            if (
-                _is_retriable_error(e) or _is_location_error(e)
-            ) and attempt < max_retries - 1:
-                wait = _retry_wait_seconds(attempt)
-                print(
-                    f"⚠️ {_retry_reason(e)} (попытка {attempt + 1}/{max_retries}): {e}. "
-                    f"Повтор через {wait} с..."
-                )
-                time.sleep(wait)
-                continue
-            last_error = str(e)
-            print(f"❌ Ошибка при генерации изображения: {e}")
-            return False, _format_user_facing_error(last_error)
+        if not try_next_model:
+            break
 
     return False, _format_user_facing_error(last_error or "Image generation failed")
 
@@ -283,12 +358,13 @@ def generate_video_from_image(
     input_image_path: str, 
     prompt: str, 
     output_video_path: str = "generated_video.mp4",
-    model_name: str = "veo-3.1-lite-generate-preview",
+    model_name: str | None = None,
     max_start_retries: int = 5,
     agency_label: str | None = None,
 ) -> tuple[bool, str | None]:
     """
     Оживляет фотографию на основе промпта.
+    При 503/перегрузке переключается на следующую модель из GEMINI_VIDEO_MODEL_FALLBACKS.
     Включает защиту от обрывов сети.
     Возвращает True в случае успеха и False при ошибке.
     """
@@ -313,42 +389,79 @@ def generate_video_from_image(
 
     print(f"📸 Изображение прочитано ({mime_type}). Отправка данных на сервер...")
 
+    models = [model_name] if model_name else _video_model_chain()
     operation = None
+    last_start_error: str | None = None
 
-    # 1. ЗАЩИТА ЭТАПА ОТПРАВКИ
-    for attempt in range(max_start_retries):
-        try:
-            operation = client.models.generate_videos(
-                model=model_name,
-                prompt=prompt,
-                image=types.Image(
-                    image_bytes=img_bytes,
-                    mime_type=mime_type,
-                ),
-                config={
-                    "aspect_ratio": "16:9",
-                    "duration_seconds": 8,
-                    "resolution": "720p",
-                }
+    # 1. ЗАЩИТА ЭТАПА ОТПРАВКИ (с fallback моделей)
+    for model_idx, current_model in enumerate(models):
+        if len(models) > 1:
+            print(
+                f"🤖 Модель видео: {current_model} "
+                f"({model_idx + 1}/{len(models)})"
             )
-            print("✅ Данные успешно отправлены! Запущена генерация.")
-            break 
-            
-        except Exception as e:
-            if _is_retriable_error(e) and attempt < max_start_retries - 1:
-                wait = _retry_wait_seconds(attempt)
-                print(
-                    f"⚠️ {_retry_reason(e)} при загрузке "
-                    f"(попытка {attempt + 1}/{max_start_retries}): {e}. "
-                    f"Повтор через {wait} с..."
+
+        try_next_model = False
+        for attempt in range(max_start_retries):
+            try:
+                operation = client.models.generate_videos(
+                    model=current_model,
+                    prompt=prompt,
+                    image=types.Image(
+                        image_bytes=img_bytes,
+                        mime_type=mime_type,
+                    ),
+                    config={
+                        "aspect_ratio": "16:9",
+                        "duration_seconds": 8,
+                        "resolution": "720p",
+                    }
                 )
-                time.sleep(wait)
-                continue
-            print(f"❌ Критическая ошибка при запуске: {e}")
-            return False, f"Ошибка запуска Veo: {e}"
+                print(
+                    f"✅ Данные успешно отправлены! Запущена генерация "
+                    f"(модель: {current_model})."
+                )
+                break
+
+            except Exception as e:
+                last_start_error = str(e)
+                if _is_overload_error(e) and model_idx < len(models) - 1:
+                    print(
+                        f"⚠️ {_retry_reason(e)} — переключаемся на "
+                        f"{models[model_idx + 1]}: {e}"
+                    )
+                    try_next_model = True
+                    break
+                if _is_retriable_error(e) and attempt < max_start_retries - 1:
+                    wait = _retry_wait_seconds(attempt)
+                    print(
+                        f"⚠️ {_retry_reason(e)} при загрузке "
+                        f"(попытка {attempt + 1}/{max_start_retries}): {e}. "
+                        f"Повтор через {wait} с..."
+                    )
+                    time.sleep(wait)
+                    continue
+                if model_idx < len(models) - 1:
+                    print(
+                        f"⚠️ Ошибка на {current_model} — пробуем "
+                        f"{models[model_idx + 1]}: {e}"
+                    )
+                    try_next_model = True
+                    break
+                print(f"❌ Критическая ошибка при запуске: {e}")
+                return False, f"Ошибка запуска Veo: {e}"
+
+        if operation:
+            break
+        if not try_next_model:
+            break
 
     if not operation:
-        msg = "Не удалось отправить запрос в Veo. Проверьте сеть и GEMINI_API_KEY."
+        detail = f" ({last_start_error})" if last_start_error else ""
+        msg = (
+            f"Не удалось отправить запрос в Veo. "
+            f"Проверьте сеть и GEMINI_API_KEY{detail}."
+        )
         print(f"❌ {msg}")
         return False, msg
 

@@ -8,13 +8,18 @@ import {
   useState,
   type ReactNode,
 } from "react";
-import { api, setKioskUnauthorizedHandler } from "../api/client";
+import {
+  api,
+  ApiError,
+  setInteractionExpiredHandler,
+  setKioskUnauthorizedHandler,
+} from "../api/client";
 import type { AppType, GuideAgencyId, KioskId } from "../api/types";
 import { getKioskIdFromSearch, parseKioskId } from "../utils/kioskLocation";
 
 const KIOSK_TOKEN_KEY = "traveltech_kiosk_token";
 const KIOSK_ID_KEY = "traveltech_kiosk_id";
-const HEARTBEAT_MS = 30_000;
+const HEARTBEAT_MS = 25_000;
 const STATUS_POLL_MS = 2_000;
 
 const ENV_KIOSK_ID = parseKioskId(import.meta.env.VITE_KIOSK_ID as string | undefined);
@@ -110,8 +115,16 @@ export function KioskProvider({ children }: { children: ReactNode }) {
         throw new Error("Киоск не активирован");
       }
       if (interactionToken && appType === type) {
-        await api.heartbeat(interactionToken);
-        return interactionToken;
+        try {
+          await api.heartbeat(interactionToken);
+          return interactionToken;
+        } catch (e) {
+          if (!(e instanceof ApiError) || e.status !== 401) {
+            throw e;
+          }
+          setInteractionToken(null);
+          setAppType(null);
+        }
       }
       const res = await api.startInteraction(kioskToken, type);
       setInteractionToken(res.interaction_token);
@@ -128,8 +141,12 @@ export function KioskProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     setKioskUnauthorizedHandler(clearKioskAuth);
-    return () => setKioskUnauthorizedHandler(null);
-  }, [clearKioskAuth]);
+    setInteractionExpiredHandler(clearInteraction);
+    return () => {
+      setKioskUnauthorizedHandler(null);
+      setInteractionExpiredHandler(null);
+    };
+  }, [clearKioskAuth, clearInteraction]);
 
   useEffect(() => {
     const onUrlChange = () => {
@@ -189,12 +206,16 @@ export function KioskProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     if (!interactionToken) return;
     const tick = () => {
-      api.heartbeat(interactionToken).catch(() => undefined);
+      api.heartbeat(interactionToken).catch((e) => {
+        if (e instanceof ApiError && e.status === 401) {
+          clearInteraction();
+        }
+      });
     };
     tick();
     const id = window.setInterval(tick, HEARTBEAT_MS);
     return () => clearInterval(id);
-  }, [interactionToken]);
+  }, [interactionToken, clearInteraction]);
 
   const value = useMemo(
     () => ({

@@ -118,25 +118,25 @@ def calculate_payments_by_hour(hourly_photos, hourly_videos):
 
 def plot_daily_stats(daily_photos, daily_videos, daily_payments, all_days):
     """Строит графики по дням"""
-    fig, axes = plt.subplots(2, 2, figsize=(15, 10))
+    fig, axes = plt.subplots(2, 2, figsize=(30, 20))
     fig.suptitle('Анализ по дням', fontsize=16, fontweight='bold')
 
     # График 1: Количество файлов по дням (столбчатая диаграмма)
     x = range(len(all_days))
-    width = 0.35
+    width = 0.6
 
     photos_counts = [daily_photos.get(day, 0) for day in all_days]
     videos_counts = [daily_videos.get(day, 0) for day in all_days]
-
-    axes[0, 0].bar([i - width / 2 for i in x], photos_counts, width, label='Картинки', alpha=0.8, color='blue')
-    axes[0, 0].bar([i + width / 2 for i in x], videos_counts, width, label='Видео', alpha=0.8, color='red')
-    axes[0, 0].set_xlabel('Дата')
-    axes[0, 0].set_ylabel('Количество')
-    axes[0, 0].set_title('Количество картинок и видео по дням')
-    axes[0, 0].set_xticks(x)
-    axes[0, 0].set_xticklabels(all_days, rotation=45, ha='right')
-    axes[0, 0].legend()
-    axes[0, 0].grid(True, alpha=0.3)
+    #
+    # axes[0, 0].bar([i - width / 2 for i in x], photos_counts, width, label='Картинки', alpha=0.8, color='blue')
+    # axes[0, 0].bar([i + width / 2 for i in x], videos_counts, width, label='Видео', alpha=0.8, color='red')
+    # axes[0, 0].set_xlabel('Дата')
+    # axes[0, 0].set_ylabel('Количество')
+    # axes[0, 0].set_title('Количество картинок и видео по дням')
+    # axes[0, 0].set_xticks(x)
+    # axes[0, 0].set_xticklabels(all_days, rotation=45, ha='right')
+    # axes[0, 0].legend()
+    # axes[0, 0].grid(True, alpha=0.3)
 
     # График 2: Выплаты по дням
     payments = [daily_payments[day] for day in all_days]
@@ -153,20 +153,20 @@ def plot_daily_stats(daily_photos, daily_videos, daily_payments, all_days):
         axes[0, 1].text(i, payment + max(payments) * 0.01, f'{payment}₽',
                         ha='center', va='bottom', fontsize=9)
 
-    # График 3: Накопленные итоги по дням
-    cumulative_photos = np.cumsum(photos_counts)
-    cumulative_videos = np.cumsum(videos_counts)
-    cumulative_total = cumulative_photos + cumulative_videos
-
-    axes[1, 0].plot(all_days, cumulative_photos, 'b-o', label='Картинки', linewidth=2, markersize=6)
-    axes[1, 0].plot(all_days, cumulative_videos, 'r-s', label='Видео', linewidth=2, markersize=6)
-    axes[1, 0].plot(all_days, cumulative_total, 'g-^', label='Всего', linewidth=2, markersize=6)
-    axes[1, 0].set_xlabel('Дата')
-    axes[1, 0].set_ylabel('Накопленное количество')
-    axes[1, 0].set_title('Накопленное количество файлов по дням')
-    axes[1, 0].legend()
-    axes[1, 0].grid(True, alpha=0.3)
-    axes[1, 0].tick_params(axis='x', rotation=45)
+    # # График 3: Накопленные итоги по дням
+    # cumulative_photos = np.cumsum(photos_counts)
+    # cumulative_videos = np.cumsum(videos_counts)
+    # cumulative_total = cumulative_photos + cumulative_videos
+    #
+    # axes[1, 0].plot(all_days, cumulative_photos, 'b-o', label='Картинки', linewidth=2, markersize=6)
+    # axes[1, 0].plot(all_days, cumulative_videos, 'r-s', label='Видео', linewidth=2, markersize=6)
+    # axes[1, 0].plot(all_days, cumulative_total, 'g-^', label='Всего', linewidth=2, markersize=6)
+    # axes[1, 0].set_xlabel('Дата')
+    # axes[1, 0].set_ylabel('Накопленное количество')
+    # axes[1, 0].set_title('Накопленное количество файлов по дням')
+    # axes[1, 0].legend()
+    # axes[1, 0].grid(True, alpha=0.3)
+    # axes[1, 0].tick_params(axis='x', rotation=45)
 
     # График 4: Накопленные выплаты по дням
     cumulative_payments = np.cumsum(payments)
@@ -180,7 +180,7 @@ def plot_daily_stats(daily_photos, daily_videos, daily_payments, all_days):
     # Добавляем значения на график выплат
     for i, (day, cum_pay) in enumerate(zip(all_days, cumulative_payments)):
         axes[1, 1].annotate(f'{int(cum_pay)}₽', (day, cum_pay),
-                            textcoords="offset points", xytext=(0, 10), ha='center', fontsize=8)
+                            textcoords="offset points", xytext=(0, 10), ha='center', fontsize=4)
 
     plt.tight_layout()
     plt.show()
@@ -315,7 +315,9 @@ def main():
 
 
 if __name__ == "__main__":
-    files = ['01.06.26_07.06.26.txt', '08.06.26_15.06.26.txt', '19.05.26_24.05.26.txt', '25.05.26_31.05.26.txt']
+    files = [entry.name for entry in os.scandir('/Users/egorshvetsov/PycharmProjects/traveltech_kiosk_1/logs') if entry.is_file()]
+    print(files)
+    print(len(files))
     with open('app.log', 'w') as log_file:
         for file in files:
             with open(f"logs/{file}") as temp_file:

@@ -110,12 +110,8 @@ export function NeuralBoxPhoto() {
   const [isGenerating, setIsGenerating] = useState(
     () => savedTaskRef.current?.phase === "generating"
   );
-  const [showResult, setShowResult] = useState(
-    () => savedTaskRef.current?.phase === "done"
-  );
-  const [resultUrl, setResultUrl] = useState<string | null>(
-    () => savedTaskRef.current?.resultUrl ?? null
-  );
+  const [showResult, setShowResult] = useState(false);
+  const [resultUrl, setResultUrl] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [taskId, setTaskId] = useState<string | null>(
     () => savedTaskRef.current?.taskId ?? null
@@ -145,10 +141,7 @@ export function NeuralBoxPhoto() {
         setPollingToken(saved.pollingToken);
       }
       if (saved.phase === "done" && saved.resultUrl) {
-        setIsGenerating(false);
-        setShowResult(true);
-        setResultUrl(saved.resultUrl);
-        setPhotoTaken(true);
+        writeSavedTask(null);
       }
     };
 
@@ -503,7 +496,11 @@ export function NeuralBoxPhoto() {
         )}
 
         {showResult && (
-          <div className="pt-4 text-center">
+          <div className="flex flex-col items-center gap-3 pt-4">
+            <Button variant="secondary" size="lg" onPress={handleRetake}>
+              <RotateCcw className="size-5" />
+              Сделать новое фото
+            </Button>
             <Button variant="primary" size="lg" onPress={handleBackToMenu}>
               Вернуться в меню
             </Button>

@@ -30,7 +30,7 @@ const DEFAULT_LAYOUT: KioskCameraLayout = {
 };
 
 /**
- * Попова, Рамеева: камера повёрнута на 90°.
+ * Попова: камера повёрнута на 90°.
  * Рамка подстраивается под videoWidth/videoHeight; видео без object-cover.
  */
 const PORTRAIT_KIOSK_LAYOUT: KioskCameraLayout = {
@@ -47,9 +47,16 @@ const PORTRAIT_KIOSK_LAYOUT: KioskCameraLayout = {
     "@container mx-auto mb-4 w-full max-w-xs overflow-hidden rounded-2xl bg-black sm:max-w-sm",
 };
 
-const PORTRAIT_KIOSK_IDS: KioskId[] = ["Popova", "Rameeva"];
+/** Рамеева: как Попова (90°) + ещё 180° — итого 270°, камера была вверх ногами. */
+const RAMEEVA_KIOSK_LAYOUT: KioskCameraLayout = {
+  ...PORTRAIT_KIOSK_LAYOUT,
+  rotationCw: 270,
+  videoClassName:
+    "absolute left-1/2 top-1/2 h-[100cqw] w-auto max-w-none -translate-x-1/2 -translate-y-1/2 rotate-270",
+};
 
 export function getKioskCameraLayout(kioskId: KioskId | null): KioskCameraLayout {
-  if (kioskId && PORTRAIT_KIOSK_IDS.includes(kioskId)) return PORTRAIT_KIOSK_LAYOUT;
+  if (kioskId === "Rameeva") return RAMEEVA_KIOSK_LAYOUT;
+  if (kioskId === "Popova") return PORTRAIT_KIOSK_LAYOUT;
   return DEFAULT_LAYOUT;
 }

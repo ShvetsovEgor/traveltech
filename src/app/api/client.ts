@@ -13,16 +13,64 @@ import type {
 import { buildApiUrl } from "./resolveApiBase";
 
 let kioskUnauthorizedHandler: (() => void) | null = null;
+let interactionExpiredHandler: (() => void) | null = null;
 
-/** Сброс kiosk_token в React-состоянии при 401 (см. KioskProvider). */
+/** Сброс kiosk_token в React-состоянии при 401 сессии гида (см. KioskProvider). */
 export function setKioskUnauthorizedHandler(handler: (() => void) | null) {
   kioskUnauthorizedHandler = handler;
 }
 
-async function request<T>(
-  path: string,
-  init?: RequestInit
-): Promise<T> {
+/** Сброс только interaction_token — протухла локальная сессия приложения. */
+export function setInteractionExpiredHandler(handler: (() => void) | null) {
+  interactionExpiredHandler = handler;
+}
+
+export class ApiError extends Error {
+  readonly status: number;
+  readonly path: string;
+
+  constructor(message: string, status: number, path: string) {
+    super(message);
+    this.name = "ApiError";
+    this.status = status;
+    this.path = path;
+  }
+}
+
+const INTERACTION_ONLY_PATHS = new Set([
+  "/api/interaction/heartbeat",
+  "/api/artist/generate",
+  "/api/neurobox/generate",
+  "/api/sticker-pack/generate",
+  "/api/video/generate",
+]);
+
+function isInteractionAuthError(path: string, detail: string): boolean {
+  if (INTERACTION_ONLY_PATHS.has(path)) return true;
+  const lowered = detail.toLowerCase();
+  return (
+    lowered.includes("interaction_token") ||
+    lowered.includes("interaction token") ||
+    lowered.includes("not for neurobox") ||
+    lowered.includes("not for neuro_artist") ||
+    lowered.includes("not for video") ||
+    lowered.includes("not for sticker")
+  );
+}
+
+function shouldClearKioskAuth(status: number, path: string, detail: string): boolean {
+  if (status !== 401 || path === "/api/auth/login") return false;
+  if (isInteractionAuthError(path, detail)) return false;
+  if (path.startsWith("/api/tasks/")) return false;
+  return true;
+}
+
+function shouldClearInteraction(status: number, path: string, detail: string): boolean {
+  if (status !== 401) return false;
+  return isInteractionAuthError(path, detail);
+}
+
+async function request<T>(path: string, init?: RequestInit): Promise<T> {
   const res = await fetch(buildApiUrl(path), init);
   if (!res.ok) {
     let detail = res.statusText;
@@ -35,11 +83,16 @@ async function request<T>(
     } catch {
       /* ignore */
     }
-    if (res.status === 401 && path !== "/api/auth/login") {
+    const message = typeof detail === "string" ? detail : "Request failed";
+
+    if (shouldClearInteraction(res.status, path, message)) {
+      interactionExpiredHandler?.();
+    } else if (shouldClearKioskAuth(res.status, path, message)) {
       sessionStorage.removeItem("traveltech_kiosk_token");
       kioskUnauthorizedHandler?.();
     }
-    throw new Error(typeof detail === "string" ? detail : "Request failed");
+
+    throw new ApiError(message, res.status, path);
   }
   return res.json() as Promise<T>;
 }

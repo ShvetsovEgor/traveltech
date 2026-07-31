@@ -51,7 +51,6 @@ const styles: NeuroStyle[] = [
         options: [
           "Супермен",
           "Человек-паук",
-          "Халк",
         ],
       },
       {
@@ -182,7 +181,7 @@ export function NeuralBox() {
 
   const canContinue =
     !activeStyle?.optionGroups?.some((g) => g.id === "hero") ||
-    hasHeroSelected(activeStyle, selectedOptions);
+    (activeStyle ? hasHeroSelected(activeStyle, selectedOptions) : false);
 
   const handleContinue = () => {
     if (!activeStyleId || !activeStyle || !canContinue) return;
@@ -230,12 +229,12 @@ export function NeuralBox() {
           if (!open) closeStylePicker();
         }}
       >
-        <DialogContent className="max-w-md gap-5 rounded-3xl border-border p-6 sm:max-w-lg sm:p-8">
-          {activeStyle && (
-            <>
-              <DialogHeader className="items-center gap-3 text-center sm:items-center sm:text-center">
+        <DialogContent className="max-w-sm gap-0 rounded-3xl border-border p-0 sm:max-w-md">
+          {activeStyle ? (
+            <div className="flex max-h-[min(85dvh,calc(100dvh-2rem))] flex-col gap-3 overflow-y-auto p-4 sm:gap-4 sm:p-6">
+              <DialogHeader className="items-center gap-2 pr-8 text-center sm:items-center sm:text-center">
                 {activeStyle.coverSrc ? (
-                  <div className="size-24 overflow-hidden rounded-xl bg-white">
+                  <div className="size-16 overflow-hidden rounded-xl bg-white sm:size-20">
                     <img
                       src={activeStyle.coverSrc}
                       alt={activeStyle.name}
@@ -244,14 +243,14 @@ export function NeuralBox() {
                     />
                   </div>
                 ) : (
-                  <span className="text-6xl leading-none" aria-hidden>
+                  <span className="text-4xl leading-none sm:text-5xl" aria-hidden>
                     {activeStyle.emoji}
                   </span>
                 )}
-                <DialogTitle className="text-2xl font-bold sm:text-3xl">
+                <DialogTitle className="text-xl font-bold sm:text-2xl">
                   {activeStyle.name}
                 </DialogTitle>
-                <DialogDescription className="text-base text-muted-foreground">
+                <DialogDescription className="text-sm text-muted-foreground sm:text-base">
                   {activeStyle.optionGroups?.some((g) => g.id === "hero")
                     ? "Выберите героя, стиль и позу"
                     : activeStyle.optionGroups?.length === 1 &&
@@ -264,17 +263,17 @@ export function NeuralBox() {
               </DialogHeader>
 
               {activeStyle.optionGroups ? (
-                <div className="flex flex-col gap-5">
+                <div className="flex flex-col gap-3 sm:gap-4">
                   {activeStyle.optionGroups.map((group) => (
-                    <div key={group.id} className="flex flex-col gap-2">
-                      <p className="text-center text-sm font-semibold text-muted-foreground">
+                    <div key={group.id} className="flex flex-col gap-1.5">
+                      <p className="text-center text-xs font-semibold text-muted-foreground sm:text-sm">
                         {group.label}
                       </p>
-                      <div className="flex flex-wrap justify-center gap-3">
+                      <div className="flex flex-wrap justify-center gap-2 sm:gap-3">
                         {group.options.map((option) => (
                           <Chip
                             key={option}
-                            className="cursor-pointer px-4 py-2.5 text-base"
+                            className="cursor-pointer px-3 py-1.5 text-sm sm:px-4 sm:py-2 sm:text-base"
                             color={
                               selectedOptions.includes(option) ? "accent" : "default"
                             }
@@ -291,11 +290,11 @@ export function NeuralBox() {
                   ))}
                 </div>
               ) : (
-                <div className="flex flex-wrap justify-center gap-3">
+                <div className="flex flex-wrap justify-center gap-2 sm:gap-3">
                   {activeStyle.options?.map((option) => (
                     <Chip
                       key={option}
-                      className="cursor-pointer px-4 py-2.5 text-base"
+                      className="cursor-pointer px-3 py-1.5 text-sm sm:px-4 sm:py-2 sm:text-base"
                       color={selectedOptions.includes(option) ? "accent" : "default"}
                       onClick={() => toggleFlatOption(option)}
                     >
@@ -308,11 +307,11 @@ export function NeuralBox() {
                 </div>
               )}
 
-              <DialogFooter className="flex-col gap-3 sm:flex-col">
+              <DialogFooter className="flex-col gap-2 sm:flex-col sm:gap-3">
                 <Button
                   variant="primary"
-                  size="lg"
-                  className="w-full"
+                  size="md"
+                  className="w-full sm:h-12 sm:text-base"
                   isDisabled={!canContinue}
                   onPress={handleContinue}
                 >
@@ -320,15 +319,15 @@ export function NeuralBox() {
                 </Button>
                 <Button
                   variant="secondary"
-                  size="lg"
-                  className="w-full"
+                  size="md"
+                  className="w-full sm:h-12 sm:text-base"
                   onPress={closeStylePicker}
                 >
                   Отмена
                 </Button>
               </DialogFooter>
-            </>
-          )}
+            </div>
+          ) : null}
         </DialogContent>
       </Dialog>
     </KioskScreen>

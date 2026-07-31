@@ -38,7 +38,7 @@ class Settings(BaseSettings):
     redis_url: str = "redis://localhost:6379/0"
 
     # Auth (kiosk session ends only on explicit logout or frontend idle timeout)
-    interaction_heartbeat_timeout_seconds: int = 120
+    interaction_heartbeat_timeout_seconds: int = 600
     session_cleanup_interval_seconds: int = 30
 
     # PIN codes per kiosk — Технологии путешествий (override: KIOSK_PIN_POPOVA=1234)
@@ -73,6 +73,14 @@ class Settings(BaseSettings):
 
     # AI prompts catalog (JSON). Keys must match UI option labels in option_map.
     prompts_file: str = "prompts/prompts.json"
+
+    # Google GenAI models (ai_services.py). Fallbacks — через запятую, без пробелов обязательно.
+    gemini_image_model: str = "gemini-2.5-flash-image"
+    gemini_image_model_fallbacks: str = (
+        "gemini-3.1-flash-lite-image,gemini-3.1-flash-image"
+    )
+    gemini_video_model: str = "veo-3.1-lite-generate-preview"
+    gemini_video_model_fallbacks: str = "veo-3.1-generate-preview"
 
     # Telegram sticker pack (sticker_pack flow)
     telegram_bot_token: str = ""
