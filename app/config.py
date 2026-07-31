@@ -76,9 +76,7 @@ class Settings(BaseSettings):
 
     # Google GenAI models (ai_services.py). Fallbacks — через запятую, без пробелов обязательно.
     gemini_image_model: str = "gemini-2.5-flash-image"
-    gemini_image_model_fallbacks: str = (
-        "gemini-3.1-flash-lite-image,gemini-3.1-flash-image"
-    )
+    gemini_image_model_fallbacks: str = "gemini-3.1-flash-image"
     gemini_video_model: str = "veo-3.1-lite-generate-preview"
     gemini_video_model_fallbacks: str = "veo-3.1-generate-preview"
 

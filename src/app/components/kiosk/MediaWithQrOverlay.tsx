@@ -8,6 +8,12 @@ const QR_RATIO = 0.2;
 /** Авто-повторы загрузки фото (сервер мог быть занят сразу после генерации). */
 const MAX_AUTO_RETRIES = 3;
 const RETRY_DELAY_MS = 2_500;
+/**
+ * Если `<img>` не отдаёт ни onLoad, ни onError (зависшее соединение,
+ * "тухлый" TCP-стрим, CDN не успел отдать файл) — не ждём браузерный
+ * таймаут (может быть 1-2 минуты), а сами считаем попытку неудачной.
+ */
+const LOAD_STALL_TIMEOUT_MS = 2_000;
 
 type MediaWithQrOverlayProps = {
   url: string;
@@ -41,13 +47,17 @@ export function MediaWithQrOverlay({
   const [attempt, setAttempt] = useState(0);
   const failCountRef = useRef(0);
   const retryTimerRef = useRef(0);
+  const stallTimerRef = useRef(0);
   const isImage = variant === "image";
 
   useEffect(() => {
     setStatus("loading");
     setAttempt(0);
     failCountRef.current = 0;
-    return () => window.clearTimeout(retryTimerRef.current);
+    return () => {
+      window.clearTimeout(retryTimerRef.current);
+      window.clearTimeout(stallTimerRef.current);
+    };
   }, [url]);
 
   useEffect(() => {
@@ -68,6 +78,7 @@ export function MediaWithQrOverlay({
   }, [variant, url]);
 
   const handleImageError = () => {
+    window.clearTimeout(stallTimerRef.current);
     failCountRef.current += 1;
     if (failCountRef.current <= MAX_AUTO_RETRIES) {
       retryTimerRef.current = window.setTimeout(() => {
@@ -78,11 +89,29 @@ export function MediaWithQrOverlay({
     setStatus("error");
   };
 
+  const handleImageLoad = () => {
+    window.clearTimeout(stallTimerRef.current);
+    setStatus("loaded");
+  };
+
   const handleManualRetry = () => {
+    window.clearTimeout(stallTimerRef.current);
     failCountRef.current = 0;
     setStatus("loading");
     setAttempt((a) => a + 1);
   };
+
+  // Запасной таймер на каждую попытку: если `<img>` не даёт ни onLoad,
+  // ни onError за LOAD_STALL_TIMEOUT_MS (зависшее соединение), считаем
+  // попытку неудачной и запускаем обычную логику ретрая/ошибки.
+  useEffect(() => {
+    if (!isImage || status !== "loading") return;
+    stallTimerRef.current = window.setTimeout(() => {
+      handleImageError();
+    }, LOAD_STALL_TIMEOUT_MS);
+    return () => window.clearTimeout(stallTimerRef.current);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isImage, status, attempt]);
 
   const qrCodeSize = Math.max(24, qrPixelSize - 8);
   const showQr = qrPixelSize > 0 && (!isImage || status === "loaded");
@@ -115,7 +144,7 @@ export function MediaWithQrOverlay({
                   mediaClassName
                 )}
                 draggable={false}
-                onLoad={() => setStatus("loaded")}
+                onLoad={handleImageLoad}
                 onError={handleImageError}
               />
             )}

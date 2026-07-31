@@ -114,6 +114,13 @@ export function useTaskPolling(
             handlersRef.current.onComplete(status.result_url);
             return;
           }
+          // Задача помечена завершённой, но ссылки на результат нет
+          // (гонка при рестарте Redis) — не зависаем в опросе навечно.
+          stopPolling();
+          handlersRef.current.onError(
+            "Генерация завершилась, но результат не найден. Попробуйте ещё раз."
+          );
+          return;
         }
 
         if (status.status === "failed" || status.status === "cancelled") {
