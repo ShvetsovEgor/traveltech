@@ -58,7 +58,25 @@ def _success_ready_prefix(agency_label: str | None = None) -> str:
     return "✅ Готово! "
 
 
+def _is_overload_error(exc: BaseException) -> bool:
+    """503/429 и перегрузка — сразу переключаемся на следующую модель."""
+    msg = str(exc).lower()
+    return any(
+        token in msg
+        for token in (
+            "503",
+            "429",
+            "unavailable",
+            "high demand",
+            "overloaded",
+            "resource exhausted",
+        )
+    )
+
+
 def _is_retriable_error(exc: BaseException) -> bool:
+    if _is_overload_error(exc):
+        return False
     if isinstance(exc, _NETWORK_ERRORS):
         return True
     msg = str(exc).lower()
@@ -71,17 +89,10 @@ def _is_retriable_error(exc: BaseException) -> bool:
             "timeout",
             "network",
             "reset",
-            # Временные ошибки Gemini / Google API
-            "503",
+            # Временные ошибки Gemini / Google API (кроме перегрузки — см. _is_overload_error)
             "502",
             "504",
             "500",
-            "429",
-            "unavailable",
-            "high demand",
-            "rate limit",
-            "resource exhausted",
-            "overloaded",
             "internal error",
         )
     )
@@ -127,22 +138,6 @@ def _retry_reason(exc: BaseException) -> str:
     return "Временная ошибка API"
 
 
-def _is_overload_error(exc: BaseException) -> bool:
-    """503/429 и перегрузка — сразу переключаемся на следующую модель."""
-    msg = str(exc).lower()
-    return any(
-        token in msg
-        for token in (
-            "503",
-            "429",
-            "unavailable",
-            "high demand",
-            "overloaded",
-            "resource exhausted",
-        )
-    )
-
-
 def _parse_model_chain(primary: str, fallbacks_csv: str) -> list[str]:
     chain: list[str] = []
     for name in [primary, *fallbacks_csv.split(",")]:
@@ -164,6 +159,21 @@ def _video_model_chain() -> list[str]:
 
     s = get_settings()
     return _parse_model_chain(s.gemini_video_model, s.gemini_video_model_fallbacks)
+
+
+def _attempts_for_model(model_idx: int, total_models: int, max_retries: int) -> int:
+    """Дешёвая (первая) модель — одна попытка, дальше — полный лимит ретраев."""
+    if model_idx == 0 and total_models > 1:
+        return 1
+    return max_retries
+
+
+def _switch_to_next_model(
+    model_idx: int,
+    models: list[str],
+    reason: str,
+) -> None:
+    print(f"⚠️ {reason} — сразу пробуем {models[model_idx + 1]} (без паузы)")
 
 
 def _iter_response_parts(response: object) -> list[object]:
@@ -246,8 +256,9 @@ def generate_stylized_image(
                 f"({model_idx + 1}/{len(models)})"
             )
 
+        attempts = _attempts_for_model(model_idx, len(models), max_retries)
         try_next_model = False
-        for attempt in range(max_retries):
+        for attempt in range(attempts):
             current_prompt = (
                 fallback_prompt
                 if attempt > 0 and fallback_prompt
@@ -267,22 +278,23 @@ def generate_stylized_image(
                 image_bytes = _extract_image_bytes_from_response(response)
                 if not image_bytes:
                     last_error = _describe_missing_image_response(response)
-                    if attempt < max_retries - 1:
+                    if model_idx < len(models) - 1:
+                        _switch_to_next_model(
+                            model_idx,
+                            models,
+                            f"{current_model} не вернула изображение",
+                        )
+                        try_next_model = True
+                        break
+                    if attempt < attempts - 1:
                         wait = _retry_wait_seconds(attempt)
                         print(
                             f"⚠️ {last_error} "
-                            f"(попытка {attempt + 1}/{max_retries}). "
+                            f"(попытка {attempt + 1}/{attempts}). "
                             f"Повтор через {wait} с..."
                         )
                         time.sleep(wait)
                         continue
-                    if model_idx < len(models) - 1:
-                        print(
-                            f"⚠️ {current_model} не вернула изображение — "
-                            f"пробуем {models[model_idx + 1]}"
-                        )
-                        try_next_model = True
-                        break
                     print(f"❌ Ошибка при генерации изображения: {last_error}")
                     return False, _format_user_facing_error(last_error)
 
@@ -298,27 +310,36 @@ def generate_stylized_image(
 
             except Exception as e:
                 last_error = str(e)
-                if _is_overload_error(e) and model_idx < len(models) - 1:
-                    print(
-                        f"⚠️ {_retry_reason(e)} — переключаемся на "
-                        f"{models[model_idx + 1]}: {e}"
+                has_fallback = model_idx < len(models) - 1
+                if has_fallback and (
+                    _is_overload_error(e)
+                    or (model_idx == 0 and len(models) > 1)
+                ):
+                    _switch_to_next_model(
+                        model_idx,
+                        models,
+                        _retry_reason(e),
                     )
                     try_next_model = True
                     break
+                if _is_overload_error(e):
+                    print(f"❌ Ошибка при генерации изображения: {e}")
+                    return False, _format_user_facing_error(last_error)
                 if (
                     _is_retriable_error(e) or _is_location_error(e)
-                ) and attempt < max_retries - 1:
+                ) and attempt < attempts - 1:
                     wait = _retry_wait_seconds(attempt)
                     print(
-                        f"⚠️ {_retry_reason(e)} (попытка {attempt + 1}/{max_retries}): "
+                        f"⚠️ {_retry_reason(e)} (попытка {attempt + 1}/{attempts}): "
                         f"{e}. Повтор через {wait} с..."
                     )
                     time.sleep(wait)
                     continue
-                if model_idx < len(models) - 1:
-                    print(
-                        f"⚠️ Ошибка на {current_model} — пробуем "
-                        f"{models[model_idx + 1]}: {e}"
+                if has_fallback:
+                    _switch_to_next_model(
+                        model_idx,
+                        models,
+                        f"Ошибка на {current_model}",
                     )
                     try_next_model = True
                     break
@@ -401,8 +422,9 @@ def generate_video_from_image(
                 f"({model_idx + 1}/{len(models)})"
             )
 
+        attempts = _attempts_for_model(model_idx, len(models), max_start_retries)
         try_next_model = False
-        for attempt in range(max_start_retries):
+        for attempt in range(attempts):
             try:
                 operation = client.models.generate_videos(
                     model=current_model,
@@ -425,26 +447,35 @@ def generate_video_from_image(
 
             except Exception as e:
                 last_start_error = str(e)
-                if _is_overload_error(e) and model_idx < len(models) - 1:
-                    print(
-                        f"⚠️ {_retry_reason(e)} — переключаемся на "
-                        f"{models[model_idx + 1]}: {e}"
+                has_fallback = model_idx < len(models) - 1
+                if has_fallback and (
+                    _is_overload_error(e)
+                    or (model_idx == 0 and len(models) > 1)
+                ):
+                    _switch_to_next_model(
+                        model_idx,
+                        models,
+                        _retry_reason(e),
                     )
                     try_next_model = True
                     break
-                if _is_retriable_error(e) and attempt < max_start_retries - 1:
+                if _is_overload_error(e):
+                    print(f"❌ Критическая ошибка при запуске: {e}")
+                    return False, f"Ошибка запуска Veo: {e}"
+                if _is_retriable_error(e) and attempt < attempts - 1:
                     wait = _retry_wait_seconds(attempt)
                     print(
                         f"⚠️ {_retry_reason(e)} при загрузке "
-                        f"(попытка {attempt + 1}/{max_start_retries}): {e}. "
+                        f"(попытка {attempt + 1}/{attempts}): {e}. "
                         f"Повтор через {wait} с..."
                     )
                     time.sleep(wait)
                     continue
-                if model_idx < len(models) - 1:
-                    print(
-                        f"⚠️ Ошибка на {current_model} — пробуем "
-                        f"{models[model_idx + 1]}: {e}"
+                if has_fallback:
+                    _switch_to_next_model(
+                        model_idx,
+                        models,
+                        f"Ошибка на {current_model}",
                     )
                     try_next_model = True
                     break
