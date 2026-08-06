@@ -14,7 +14,7 @@ from datetime import datetime
 from pathlib import Path
 from typing import Any
 
-from fastapi import FastAPI
+from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 
@@ -286,6 +286,27 @@ def create_app() -> FastAPI:
     @app.get("/api/dashboard")
     async def api_dashboard() -> dict[str, Any]:
         return await dashboard_payload()
+
+    @app.get("/api/dashboard/image-chain")
+    async def api_get_image_chain() -> dict[str, Any]:
+        from app.core.image_chain import dashboard_state
+
+        settings = get_settings()
+        return dashboard_state(flux_token=settings.flux_token)
+
+    @app.put("/api/dashboard/image-chain")
+    async def api_put_image_chain(body: dict[str, Any]) -> dict[str, Any]:
+        from app.core.image_chain import dashboard_state, save_order
+
+        order = body.get("order")
+        if not isinstance(order, list) or not order:
+            raise HTTPException(status_code=400, detail="Нужен массив order: [id, …]")
+        save_order([str(x) for x in order])
+        settings = get_settings()
+        return {
+            "ok": True,
+            **dashboard_state(flux_token=settings.flux_token),
+        }
 
     @app.get("/health")
     async def health() -> dict[str, str | bool | int]:

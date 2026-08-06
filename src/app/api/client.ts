@@ -9,6 +9,7 @@ import type {
   LoginResponse,
   TaskStatusResponse,
   DashboardResponse,
+  ImageChainResponse,
 } from "./types";
 import { buildApiUrl } from "./resolveApiBase";
 
@@ -208,6 +209,18 @@ export const api = {
 
   getDashboard() {
     return request<DashboardResponse>("/api/dashboard");
+  },
+
+  getImageChain() {
+    return request<ImageChainResponse>("/api/dashboard/image-chain");
+  },
+
+  setImageChain(order: string[]) {
+    return request<ImageChainResponse>("/api/dashboard/image-chain", {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ order }),
+    });
   },
 };
 

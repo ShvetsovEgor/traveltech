@@ -125,16 +125,24 @@ def _format_user_facing_error(message: str) -> str:
 
 
 def _retry_reason(exc: BaseException) -> str:
+    detail = str(exc).replace("\n", " ").strip()
+    if len(detail) > 220:
+        detail = detail[:220] + "…"
+
     if isinstance(exc, _NETWORK_ERRORS):
-        return "Сетевой сбой"
+        return f"Сетевой сбой ({detail})" if detail else "Сетевой сбой"
     if _is_location_error(exc):
         return "Временная ошибка региона API"
-    msg = str(exc).lower()
+    msg = detail.lower()
+    if "insufficient credits" in msg or "402" in msg:
+        return f"FLUX: нет кредитов ({detail})"
     if any(
         token in msg
         for token in ("503", "unavailable", "high demand", "429", "overloaded")
     ):
-        return "Сервис Gemini перегружен"
+        return f"Сервис перегружен ({detail})" if detail else "Сервис перегружен"
+    if detail:
+        return detail
     return "Временная ошибка API"
 
 
@@ -157,15 +165,21 @@ def _image_model_chain() -> list[str]:
 
 def _image_provider_chain() -> list[tuple[str, str]]:
     """
-    Каскад бэкендов для нейростилиста / ИИ-творца:
-      gemini-2.5-flash-image → flux-2-klein-4b → gemini-3.1-flash-image
-
-    Элемент: (provider, model_or_endpoint_tag)
-      provider = "gemini" | "flux"
+    Каскад бэкендов для нейростилиста / ИИ-творца.
+    Приоритет:
+      1) data/image_provider_chain.json (дашборд)
+      2) IMAGE_PROVIDER_CHAIN из env
+      3) дефолт flux → gemini-2.5 → gemini-3.1
     """
     from app.config import get_settings
+    from app.core.image_chain import resolve_provider_steps
 
     s = get_settings()
+    # Файл дашборда — основной источник порядка
+    file_steps = resolve_provider_steps(flux_token=s.flux_token)
+    if file_steps:
+        return file_steps
+
     raw = (s.image_provider_chain or "").strip()
     if raw:
         chain: list[tuple[str, str]] = []
@@ -176,7 +190,6 @@ def _image_provider_chain() -> list[tuple[str, str]]:
             if ":" in part:
                 prov, name = part.split(":", 1)
             else:
-                # "flux" или имя gemini-модели
                 if part.lower() == "flux" or part.startswith("flux-"):
                     prov, name = "flux", part if part.startswith("flux-") else "flux-2-klein-4b"
                 else:
@@ -191,15 +204,7 @@ def _image_provider_chain() -> list[tuple[str, str]]:
         if chain:
             return chain
 
-    # Дефолт: gemini primary → flux (если токен) → gemini fallbacks
-    chain = [("gemini", s.gemini_image_model.strip() or "gemini-2.5-flash-image")]
-    if s.flux_token.strip():
-        chain.append(("flux", "flux-2-klein-4b"))
-    for name in (s.gemini_image_model_fallbacks or "").split(","):
-        n = name.strip()
-        if n and ("gemini", n) not in chain:
-            chain.append(("gemini", n))
-    return chain
+    return resolve_provider_steps(flux_token=s.flux_token)
 
 
 def _video_model_chain() -> list[str]:
@@ -332,7 +337,7 @@ def generate_stylized_image(
     Генерирует стилизованное изображение (ИИ-творец / Нейростилист).
 
     Каскад по умолчанию (один и тот же промпт):
-      gemini-2.5-flash-image → FLUX klein → gemini-3.1-flash-image
+      FLUX klein → gemini-2.5-flash-image → gemini-3.1-flash-image
     При недоступности шага — сразу следующий бэкенд без паузы.
     """
     print("🎨 Запуск генерации изображения (ИИ-творец/Нейростилист)...")
@@ -385,10 +390,12 @@ def generate_stylized_image(
             except Exception as e:
                 last_error = str(e)
                 has_next = step_idx < len(steps) - 1
+                reason = _retry_reason(e)
+                print(f"⚠️ Сбой {label}: {last_error[:400]}")
 
                 # Пока есть следующий бэкенд — сразу переключаемся (тот же промпт)
                 if has_next:
-                    _switch_to_next_step(step_idx, steps, f"{label}: {_retry_reason(e)}")
+                    _switch_to_next_step(step_idx, steps, f"{label}: {reason}")
                     try_next = True
                     break
 

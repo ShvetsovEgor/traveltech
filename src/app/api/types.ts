@@ -102,3 +102,21 @@ export interface DashboardResponse {
     kiosks: KioskDashboardStatus[];
   };
 }
+
+export interface ImageChainStep {
+  id: string;
+  provider: string;
+  model: string;
+  label: string;
+  position: number;
+  enabled: boolean;
+  note?: string | null;
+}
+
+export interface ImageChainResponse {
+  ok?: boolean;
+  order: string[];
+  steps: ImageChainStep[];
+  flux_token_set: boolean;
+  effective: Array<{ provider: string; model: string }>;
+}
