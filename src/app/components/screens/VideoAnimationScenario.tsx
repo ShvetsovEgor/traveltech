@@ -6,7 +6,6 @@ import {
   Button,
   Card,
   Chip,
-  ProgressCircle,
   Surface,
   Typography,
 } from "@heroui/react";
@@ -22,6 +21,7 @@ import {
 import {
   KioskBody,
   KioskHeader,
+  KioskLoadingRing,
   KioskScreen,
   MediaWithQrOverlay,
   SelectionCard,
@@ -255,13 +255,11 @@ export function VideoAnimationScenario() {
         )}
 
         {isGenerating && (
-          <div className="text-center">
-            <ProgressCircle
-              isIndeterminate
+          <div className="flex flex-col items-center text-center">
+            <KioskLoadingRing
               size="lg"
-              color="accent"
-              className="mx-auto mb-8"
-              aria-label="Создание видео"
+              label="Создание видео"
+              className="mb-8"
             />
             <Typography.Heading level={2} className="mb-4 text-4xl font-bold text-foreground">
               Создаём видео...
@@ -275,6 +273,7 @@ export function VideoAnimationScenario() {
         {showResult && mediaUrl && (
           <div className="flex flex-col items-center gap-3">
             <MediaWithQrOverlay
+              key={mediaUrl}
               url={mediaUrl}
               alt="Сгенерированное видео"
               variant="video"

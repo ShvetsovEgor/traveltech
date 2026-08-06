@@ -5,6 +5,7 @@ export { KioskBody } from "./KioskBody";
 export { SelectionCard } from "./SelectionCard";
 export { KioskCameraViewport } from "./KioskCameraViewport";
 export { MediaWithQrOverlay } from "./MediaWithQrOverlay";
+export { KioskLoadingRing } from "./KioskLoadingRing";
 export { LoadingStepsList } from "./LoadingStepsList";
 export type { LoadingStep } from "./LoadingStepsList";
 export { InteractiveStrip } from "./InteractiveStrip";

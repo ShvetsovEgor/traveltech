@@ -4,4 +4,5 @@ export const STATIC_FRONTEND_HOSTS = [
   "www.missioninnopolis.ru",
 ] as const;
 
-export const PRODUCTION_API_FALLBACK = "https://traveltech-mgig.onrender.com";
+/** Актуальный backend на Render (если VITE_API_URL не задан при сборке). */
+export const PRODUCTION_API_FALLBACK = "https://traveltech-8md1.onrender.com";

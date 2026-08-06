@@ -148,10 +148,58 @@ def _parse_model_chain(primary: str, fallbacks_csv: str) -> list[str]:
 
 
 def _image_model_chain() -> list[str]:
+    """Только Gemini-имена (для совместимости / явного model_name)."""
     from app.config import get_settings
 
     s = get_settings()
     return _parse_model_chain(s.gemini_image_model, s.gemini_image_model_fallbacks)
+
+
+def _image_provider_chain() -> list[tuple[str, str]]:
+    """
+    Каскад бэкендов для нейростилиста / ИИ-творца:
+      gemini-2.5-flash-image → flux-2-klein-4b → gemini-3.1-flash-image
+
+    Элемент: (provider, model_or_endpoint_tag)
+      provider = "gemini" | "flux"
+    """
+    from app.config import get_settings
+
+    s = get_settings()
+    raw = (s.image_provider_chain or "").strip()
+    if raw:
+        chain: list[tuple[str, str]] = []
+        for part in raw.split(","):
+            part = part.strip()
+            if not part:
+                continue
+            if ":" in part:
+                prov, name = part.split(":", 1)
+            else:
+                # "flux" или имя gemini-модели
+                if part.lower() == "flux" or part.startswith("flux-"):
+                    prov, name = "flux", part if part.startswith("flux-") else "flux-2-klein-4b"
+                else:
+                    prov, name = "gemini", part
+            prov = prov.strip().lower()
+            name = name.strip()
+            if prov and name and (prov, name) not in chain:
+                if prov == "flux" and not s.flux_token.strip():
+                    print("⚠️ FLUX в IMAGE_PROVIDER_CHAIN, но FLUX_TOKEN пуст — шаг пропущен")
+                    continue
+                chain.append((prov, name))
+        if chain:
+            return chain
+
+    # Дефолт: gemini primary → flux (если токен) → gemini fallbacks
+    chain = [("gemini", s.gemini_image_model.strip() or "gemini-2.5-flash-image")]
+    if s.flux_token.strip():
+        chain.append(("flux", "flux-2-klein-4b"))
+    for name in (s.gemini_image_model_fallbacks or "").split(","):
+        n = name.strip()
+        if n and ("gemini", n) not in chain:
+            chain.append(("gemini", n))
+    return chain
 
 
 def _video_model_chain() -> list[str]:
@@ -162,10 +210,19 @@ def _video_model_chain() -> list[str]:
 
 
 def _attempts_for_model(model_idx: int, total_models: int, max_retries: int) -> int:
-    """Дешёвая (первая) модель — одна попытка, дальше — полный лимит ретраев."""
-    if model_idx == 0 and total_models > 1:
+    """Пока есть следующий бэкенд — одна попытка и сразу дальше; на последнем — ретраи."""
+    if model_idx < total_models - 1:
         return 1
     return max_retries
+
+
+def _switch_to_next_step(
+    step_idx: int,
+    steps: list[tuple[str, str]],
+    reason: str,
+) -> None:
+    nxt = steps[step_idx + 1]
+    print(f"⚠️ {reason} — сразу пробуем {nxt[0]}:{nxt[1]} (без паузы)")
 
 
 def _switch_to_next_model(
@@ -173,6 +230,7 @@ def _switch_to_next_model(
     models: list[str],
     reason: str,
 ) -> None:
+    """Для видео-каскада (только Gemini-имена)."""
     print(f"⚠️ {reason} — сразу пробуем {models[model_idx + 1]} (без паузы)")
 
 
@@ -224,6 +282,43 @@ def _describe_missing_image_response(response: object) -> str:
     )
 
 
+def _try_gemini_image(
+    sketch_image: Image.Image,
+    current_prompt: str,
+    current_model: str,
+    output_image_path: str,
+) -> None:
+    """Один вызов Gemini IMAGE. Пишет файл или бросает Exception."""
+    response = client.models.generate_content(
+        model=current_model,
+        contents=[sketch_image, current_prompt],
+        config=types.GenerateContentConfig(response_modalities=["IMAGE"]),
+    )
+    image_bytes = _extract_image_bytes_from_response(response)
+    if not image_bytes:
+        raise RuntimeError(_describe_missing_image_response(response))
+    with open(output_image_path, "wb") as f:
+        f.write(image_bytes)
+
+
+def _try_flux_image(
+    input_image_path: str,
+    current_prompt: str,
+    output_image_path: str,
+) -> None:
+    from app.config import get_settings
+    from app.services.flux_client import generate_flux_edit
+
+    s = get_settings()
+    generate_flux_edit(
+        input_image_path,
+        current_prompt,
+        output_image_path,
+        token=s.flux_token,
+        endpoint=s.flux_endpoint or "https://api.bfl.ai/v1/flux-2-klein-4b",
+    )
+
+
 def generate_stylized_image(
     input_image_path: str,
     prompt: str,
@@ -234,9 +329,11 @@ def generate_stylized_image(
     fallback_prompt: str | None = None,
 ) -> tuple[bool, str | None]:
     """
-    Генерирует стилизованное изображение на основе наброска/фото и промпта.
-    При 503/перегрузке переключается на следующую модель из GEMINI_IMAGE_MODEL_FALLBACKS.
-    Возвращает (успех, сообщение об ошибке или None).
+    Генерирует стилизованное изображение (ИИ-творец / Нейростилист).
+
+    Каскад по умолчанию (один и тот же промпт):
+      gemini-2.5-flash-image → FLUX klein → gemini-3.1-flash-image
+    При недоступности шага — сразу следующий бэкенд без паузы.
     """
     print("🎨 Запуск генерации изображения (ИИ-творец/Нейростилист)...")
 
@@ -246,19 +343,23 @@ def generate_stylized_image(
         print(f"❌ Не удалось открыть {input_image_path}: {e}")
         return False, f"Не удалось открыть фото: {e}"
 
-    models = [model_name] if model_name else _image_model_chain()
+    if model_name:
+        steps: list[tuple[str, str]] = [("gemini", model_name)]
+    else:
+        steps = _image_provider_chain()
+
     last_error: str | None = None
 
-    for model_idx, current_model in enumerate(models):
-        if len(models) > 1:
-            print(
-                f"🤖 Модель изображения: {current_model} "
-                f"({model_idx + 1}/{len(models)})"
-            )
+    for step_idx, (provider, model_id) in enumerate(steps):
+        label = f"{provider}:{model_id}"
+        if len(steps) > 1:
+            print(f"🤖 Бэкенд: {label} ({step_idx + 1}/{len(steps)})")
 
-        attempts = _attempts_for_model(model_idx, len(models), max_retries)
-        try_next_model = False
+        attempts = _attempts_for_model(step_idx, len(steps), max_retries)
+        try_next = False
+
         for attempt in range(attempts):
+            # На смене бэкенда — всегда исходный промпт; упрощённый только на ретраях последнего шага
             current_prompt = (
                 fallback_prompt
                 if attempt > 0 and fallback_prompt
@@ -267,61 +368,30 @@ def generate_stylized_image(
             if attempt > 0 and fallback_prompt:
                 print("🔄 Повтор с упрощённым промптом (fallback)...")
             try:
-                response = client.models.generate_content(
-                    model=current_model,
-                    contents=[sketch_image, current_prompt],
-                    config=types.GenerateContentConfig(
-                        response_modalities=["IMAGE"]
-                    ),
-                )
-
-                image_bytes = _extract_image_bytes_from_response(response)
-                if not image_bytes:
-                    last_error = _describe_missing_image_response(response)
-                    if model_idx < len(models) - 1:
-                        _switch_to_next_model(
-                            model_idx,
-                            models,
-                            f"{current_model} не вернула изображение",
-                        )
-                        try_next_model = True
-                        break
-                    if attempt < attempts - 1:
-                        wait = _retry_wait_seconds(attempt)
-                        print(
-                            f"⚠️ {last_error} "
-                            f"(попытка {attempt + 1}/{attempts}). "
-                            f"Повтор через {wait} с..."
-                        )
-                        time.sleep(wait)
-                        continue
-                    print(f"❌ Ошибка при генерации изображения: {last_error}")
-                    return False, _format_user_facing_error(last_error)
-
-                with open(output_image_path, "wb") as f:
-                    f.write(image_bytes)
+                if provider == "flux":
+                    _try_flux_image(input_image_path, current_prompt, output_image_path)
+                else:
+                    _try_gemini_image(
+                        sketch_image, current_prompt, model_id, output_image_path
+                    )
 
                 print(
                     f"{_success_ready_prefix(agency_label)}"
                     f"Картина сохранена как {output_image_path} "
-                    f"(модель: {current_model})"
+                    f"(бэкенд: {label})"
                 )
                 return True, None
 
             except Exception as e:
                 last_error = str(e)
-                has_fallback = model_idx < len(models) - 1
-                if has_fallback and (
-                    _is_overload_error(e)
-                    or (model_idx == 0 and len(models) > 1)
-                ):
-                    _switch_to_next_model(
-                        model_idx,
-                        models,
-                        _retry_reason(e),
-                    )
-                    try_next_model = True
+                has_next = step_idx < len(steps) - 1
+
+                # Пока есть следующий бэкенд — сразу переключаемся (тот же промпт)
+                if has_next:
+                    _switch_to_next_step(step_idx, steps, f"{label}: {_retry_reason(e)}")
+                    try_next = True
                     break
+
                 if _is_overload_error(e):
                     print(f"❌ Ошибка при генерации изображения: {e}")
                     return False, _format_user_facing_error(last_error)
@@ -335,18 +405,11 @@ def generate_stylized_image(
                     )
                     time.sleep(wait)
                     continue
-                if has_fallback:
-                    _switch_to_next_model(
-                        model_idx,
-                        models,
-                        f"Ошибка на {current_model}",
-                    )
-                    try_next_model = True
-                    break
+
                 print(f"❌ Ошибка при генерации изображения: {e}")
                 return False, _format_user_facing_error(last_error)
 
-        if not try_next_model:
+        if not try_next:
             break
 
     return False, _format_user_facing_error(last_error or "Image generation failed")

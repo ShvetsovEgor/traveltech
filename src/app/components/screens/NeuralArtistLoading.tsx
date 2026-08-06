@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { useNavigate, useLocation } from "react-router";
 import { Palette, Sparkles, Brush } from "lucide-react";
-import { Button, ProgressCircle, Typography } from "@heroui/react";
+import { Button, Typography } from "@heroui/react";
 import { api } from "../../api/client";
 import { useKiosk } from "../../context/KioskContext";
 import { useTaskPolling } from "../../hooks/useTaskPolling";
@@ -11,7 +11,7 @@ import {
   getPendingArtistSketchStyle,
 } from "../../utils/artistSketchSession";
 import { dataUrlToFile } from "../../utils/media";
-import { KioskScreen, LoadingStepsList } from "../kiosk";
+import { KioskLoadingRing, KioskScreen, LoadingStepsList } from "../kiosk";
 
 const loadingSteps = [
   { icon: Palette, text: "Подбираем палитру..." },
@@ -127,6 +127,14 @@ export function NeuralArtistLoading() {
   useTaskPolling(taskId, interactionToken, {
     onComplete: (resultUrl) => {
       sessionStorage.removeItem(ARTIST_GEN_LOCK_KEY);
+      try {
+        sessionStorage.setItem(
+          "traveltech_artist_result",
+          JSON.stringify({ style, resultUrl })
+        );
+      } catch {
+        /* ignore quota */
+      }
       navigate("/neural-artist/result", { state: { style, resultUrl } });
     },
     onError: (message) => {
@@ -162,12 +170,10 @@ export function NeuralArtistLoading() {
       className="items-center justify-center"
       contentClassName="flex flex-col items-center text-center"
     >
-      <ProgressCircle
-        isIndeterminate
+      <KioskLoadingRing
         size="lg"
-        color="accent"
+        label="Генерация"
         className="mb-12"
-        aria-label="Генерация"
       />
 
       <Typography.Heading

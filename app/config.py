@@ -74,11 +74,18 @@ class Settings(BaseSettings):
     # AI prompts catalog (JSON). Keys must match UI option labels in option_map.
     prompts_file: str = "prompts/prompts.json"
 
-    # Google GenAI models (ai_services.py). Fallbacks — через запятую, без пробелов обязательно.
+    # Google GenAI models (ai_services.py). Fallbacks — через запятую.
     gemini_image_model: str = "gemini-2.5-flash-image"
     gemini_image_model_fallbacks: str = "gemini-3.1-flash-image"
     gemini_video_model: str = "veo-3.1-lite-generate-preview"
     gemini_video_model_fallbacks: str = "veo-3.1-generate-preview"
+
+    # Каскад картинок: gemini-2.5 → FLUX → gemini-3.1 (см. ai_services._image_provider_chain).
+    # Пусто → авто: primary, flux (если есть FLUX_TOKEN), fallbacks.
+    # Явно: gemini:gemini-2.5-flash-image,flux:flux-2-klein-4b,gemini:gemini-3.1-flash-image
+    image_provider_chain: str = ""
+    flux_token: str = ""
+    flux_endpoint: str = "https://api.bfl.ai/v1/flux-2-klein-4b"
 
     # Telegram sticker pack (sticker_pack flow)
     telegram_bot_token: str = ""

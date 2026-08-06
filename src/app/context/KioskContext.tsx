@@ -139,14 +139,35 @@ export function KioskProvider({ children }: { children: ReactNode }) {
     setAppType(null);
   }, []);
 
+  const kioskTokenRef = useRef(kioskToken);
+  kioskTokenRef.current = kioskToken;
+
+  /**
+   * interaction_token обычно протухает вместе с kiosk_token (например,
+   * при перезапуске backend со сброшенным in-memory Redis). Помимо сброса
+   * локальной interaction-сессии сразу проверяем kiosk_token — если он
+   * тоже недействителен, api-клиент сам вызовет clearKioskAuth и
+   * KioskAuthGuard мгновенно вернёт на экран авторизации, а не будет
+   * ждать следующего цикла опроса (до 120с).
+   */
+  const handleInteractionExpired = useCallback(() => {
+    clearInteraction();
+    const token = kioskTokenRef.current;
+    if (token) {
+      void api.validateKioskToken(token).catch(() => {
+        /* 401 уже обработан api-клиентом (clearKioskAuth) */
+      });
+    }
+  }, [clearInteraction]);
+
   useEffect(() => {
     setKioskUnauthorizedHandler(clearKioskAuth);
-    setInteractionExpiredHandler(clearInteraction);
+    setInteractionExpiredHandler(handleInteractionExpired);
     return () => {
       setKioskUnauthorizedHandler(null);
       setInteractionExpiredHandler(null);
     };
-  }, [clearKioskAuth, clearInteraction]);
+  }, [clearKioskAuth, handleInteractionExpired]);
 
   useEffect(() => {
     const onUrlChange = () => {

@@ -5,7 +5,6 @@ import { QRCodeSVG } from "qrcode.react";
 import {
   Alert,
   Button,
-  ProgressCircle,
   Typography,
 } from "@heroui/react";
 import { api, resolveMediaUrl } from "../../api/client";
@@ -23,6 +22,7 @@ import {
   KioskBody,
   KioskCameraViewport,
   KioskHeader,
+  KioskLoadingRing,
   KioskScreen,
 } from "../kiosk";
 
@@ -78,7 +78,7 @@ function StickerPreviewGrid({
                   />
                 ) : (
                   <div className="flex flex-col items-center gap-2 px-2 text-muted-foreground">
-                    <ProgressCircle isIndeterminate size="sm" color="accent" />
+                    <KioskLoadingRing size="sm" label="Генерация стикера" />
                     <Typography.Paragraph className="text-center text-xs">
                       Генерируем…
                     </Typography.Paragraph>
@@ -482,7 +482,7 @@ export function StickerPackPhoto() {
 
             {isGeneratingPhase && stickerProgress >= stickerTotal && (
               <div className="flex items-center gap-3 text-muted-foreground">
-                <ProgressCircle isIndeterminate size="sm" color="accent" />
+                <KioskLoadingRing size="sm" label="Публикация в Telegram" />
                 <Typography.Paragraph className="text-sm">
                   Публикуем набор в Telegram…
                 </Typography.Paragraph>

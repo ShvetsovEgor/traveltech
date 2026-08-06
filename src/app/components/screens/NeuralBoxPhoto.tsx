@@ -4,7 +4,6 @@ import { Camera, RotateCcw } from "lucide-react";
 import {
   Alert,
   Button,
-  ProgressCircle,
   Typography,
 } from "@heroui/react";
 import { api, resolveMediaUrl } from "../../api/client";
@@ -21,6 +20,7 @@ import {
   KioskBody,
   KioskCameraViewport,
   KioskHeader,
+  KioskLoadingRing,
   KioskScreen,
   MediaWithQrOverlay,
 } from "../kiosk";
@@ -471,8 +471,8 @@ export function NeuralBoxPhoto() {
             )}
           </div>
         ) : isGenerating ? (
-          <div className="flex flex-col items-center gap-4 py-8 text-center">
-            <ProgressCircle isIndeterminate size="lg" color="accent" />
+          <div className="flex flex-col items-center gap-6 py-10 text-center">
+            <KioskLoadingRing size="lg" label="Генерация образа" />
             <Typography.Paragraph className="text-xl">
               Генерируем образ…
             </Typography.Paragraph>
@@ -484,6 +484,7 @@ export function NeuralBoxPhoto() {
           <div className="flex flex-col items-center gap-3">
             {displayUrl && (
               <MediaWithQrOverlay
+                key={displayUrl}
                 url={displayUrl}
                 alt="Результат"
                 fallbackAspectRatio={cameraLayout.photoAspectRatio}

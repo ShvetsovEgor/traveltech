@@ -78,9 +78,13 @@ export function GuideAuthScreen() {
           </div>
 
           <Card.Title className="text-3xl text-center mb-2">Вход гида</Card.Title>
-          <Card.Description className="text-center mb-8">
+          <Card.Description className="text-center mb-6">
             Выберите агентство и введите PIN
           </Card.Description>
+
+          <p className="mb-8 rounded-2xl bg-danger/10 px-4 py-4 text-center text-2xl font-bold uppercase tracking-wide text-danger sm:text-3xl">
+            Нужно подключить VPN
+          </p>
 
           <Label className="mb-2 block" htmlFor="guide-agency">
             Агентство
