@@ -80,9 +80,9 @@ class Settings(BaseSettings):
     gemini_video_model: str = "veo-3.1-lite-generate-preview"
     gemini_video_model_fallbacks: str = "veo-3.1-generate-preview"
 
-    # Каскад картинок: FLUX → gemini-2.5 → gemini-3.1 (см. ai_services._image_provider_chain).
-    # Пусто → авто: flux (если FLUX_TOKEN), primary, fallbacks.
-    # Явно: flux:flux-2-klein-4b,gemini:gemini-2.5-flash-image,gemini:gemini-3.1-flash-image
+    # Каскад картинок: gemini-2.5 → gemini-3.1 → FLUX (см. ai_services._image_provider_chain).
+    # Пусто → авто: gemini-2.5, gemini-3.1, flux (если FLUX_TOKEN).
+    # Явно: gemini:gemini-2.5-flash-image,gemini:gemini-3.1-flash-image,flux:flux-2-klein-4b
     image_provider_chain: str = ""
     flux_token: str = ""
     flux_endpoint: str = "https://api.bfl.ai/v1/flux-2-klein-4b"

@@ -169,7 +169,7 @@ def _image_provider_chain() -> list[tuple[str, str]]:
     Приоритет:
       1) data/image_provider_chain.json (дашборд)
       2) IMAGE_PROVIDER_CHAIN из env
-      3) дефолт flux → gemini-2.5 → gemini-3.1
+      3) дефолт gemini-2.5 → gemini-3.1 → flux
     """
     from app.config import get_settings
     from app.core.image_chain import resolve_provider_steps
@@ -337,7 +337,7 @@ def generate_stylized_image(
     Генерирует стилизованное изображение (ИИ-творец / Нейростилист).
 
     Каскад по умолчанию (один и тот же промпт):
-      FLUX klein → gemini-2.5-flash-image → gemini-3.1-flash-image
+      gemini-2.5-flash-image → gemini-3.1-flash-image → FLUX klein
     При недоступности шага — сразу следующий бэкенд без паузы.
     """
     print("🎨 Запуск генерации изображения (ИИ-творец/Нейростилист)...")

@@ -36,7 +36,11 @@ KNOWN_STEPS: list[dict[str, str]] = [
 ]
 
 _BY_ID = {s["id"]: s for s in KNOWN_STEPS}
-DEFAULT_ORDER = ["flux", "gemini-2.5", "gemini-3.1"]
+# Порядок при первом запуске и после рестарта, если дашборд ещё не сохранял свой.
+DEFAULT_ORDER = ["gemini-2.5", "gemini-3.1", "flux"]
+# Предыдущий дефолт — один раз переписываем, чтобы рестарт не возвращал FLUX первым.
+_LEGACY_DEFAULT_ORDER = ["flux", "gemini-2.5", "gemini-3.1"]
+_ORDER_VERSION = 2
 
 
 def _chain_file() -> Path:
@@ -73,9 +77,13 @@ def load_order() -> list[str]:
     try:
         raw = json.loads(path.read_text(encoding="utf-8"))
         order = raw.get("order") if isinstance(raw, dict) else raw
+        version = raw.get("v") if isinstance(raw, dict) else None
         if not isinstance(order, list):
             return list(DEFAULT_ORDER)
-        return _normalize_order([str(x) for x in order])
+        normalized = _normalize_order([str(x) for x in order])
+        if version != _ORDER_VERSION and normalized == _LEGACY_DEFAULT_ORDER:
+            return save_order(DEFAULT_ORDER)
+        return normalized
     except Exception:
         return list(DEFAULT_ORDER)
 
@@ -83,7 +91,7 @@ def load_order() -> list[str]:
 def save_order(order: list[str]) -> list[str]:
     normalized = _normalize_order(order)
     path = _chain_file()
-    payload = {"order": normalized}
+    payload = {"v": _ORDER_VERSION, "order": normalized}
     with _LOCK:
         path.write_text(
             json.dumps(payload, ensure_ascii=False, indent=2) + "\n",
