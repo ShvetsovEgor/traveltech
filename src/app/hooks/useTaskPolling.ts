@@ -3,7 +3,7 @@ import { api } from "../api/client";
 import type { StickerPreviewItem } from "../api/types";
 
 const DEFAULT_POLL_MS = 3000;
-/** Видео Veo — долго; не срываемся из‑за одного сетевого сбоя опроса. */
+/** Видео Omni — долго; не срываемся из‑за одного сетевого сбоя опроса. */
 const MAX_POLL_FAILURES = 10;
 
 function formatTaskError(message: string): string {

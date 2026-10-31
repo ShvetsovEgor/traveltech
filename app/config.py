@@ -77,8 +77,8 @@ class Settings(BaseSettings):
     # Google GenAI models (ai_services.py). Fallbacks — через запятую.
     gemini_image_model: str = "gemini-2.5-flash-image"
     gemini_image_model_fallbacks: str = "gemini-3.1-flash-image"
-    gemini_video_model: str = "veo-3.1-lite-generate-preview"
-    gemini_video_model_fallbacks: str = "veo-3.1-generate-preview"
+    gemini_video_model: str = "gemini-omni-1.1-flash"
+    gemini_video_model_fallbacks: str = ""
 
     # Каскад картинок: gemini-2.5 → gemini-3.1 → FLUX (см. ai_services._image_provider_chain).
     # Пусто → авто: gemini-2.5, gemini-3.1, flux (если FLUX_TOKEN).

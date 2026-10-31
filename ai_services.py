@@ -1,3 +1,4 @@
+import base64
 import io
 import ssl
 import time
@@ -37,7 +38,7 @@ _MIME_BY_SUFFIX = {
 
 def _prepare_video_image(input_image_path: str) -> tuple[bytes, str]:
     """
-    Байты и MIME для Veo image-to-video.
+    Байты и MIME для image-to-video (Gemini Omni).
     JPEG/PNG с диска — как есть; остальное нормализуем в JPEG через PIL.
     """
     path = Path(input_image_path)
@@ -422,27 +423,36 @@ def generate_stylized_image(
     return False, _format_user_facing_error(last_error or "Image generation failed")
 
 
-def _save_generated_video_file(generated_video: object, output_video_path: str) -> None:
-    """Сохраняет mp4 из ответа Veo (разные версии SDK)."""
-    video_file = getattr(generated_video, "video", generated_video)
-    client.files.download(file=video_file)
-
-    video_bytes = getattr(video_file, "video_bytes", None)
-    if video_bytes:
-        Path(output_video_path).write_bytes(video_bytes)
-        return
-
-    if hasattr(video_file, "save"):
-        video_file.save(output_video_path)
-        if Path(output_video_path).is_file() and Path(output_video_path).stat().st_size > 0:
-            return
-
-    downloaded = client.files.download(file=video_file)
-    if isinstance(downloaded, (bytes, bytearray)) and downloaded:
-        Path(output_video_path).write_bytes(downloaded)
-        return
-
+def _video_bytes_from_interaction(interaction: object) -> bytes:
+    """MP4 из ответа Interactions API (output_video.data — base64)."""
+    video = getattr(interaction, "output_video", None)
+    data = getattr(video, "data", None) if video is not None else None
+    if isinstance(data, (bytes, bytearray)) and data:
+        return bytes(data)
+    if isinstance(data, str) and data.strip():
+        decoded = base64.b64decode(data)
+        if decoded:
+            return decoded
     raise RuntimeError("API вернул пустое видео")
+
+
+def _await_video_interaction(interaction: object, timeout_s: int = 720) -> object:
+    """Дожидается completed, если create вернул in_progress."""
+    deadline = time.monotonic() + timeout_s
+    while getattr(interaction, "status", None) == "in_progress":
+        if time.monotonic() > deadline:
+            raise TimeoutError("Генерация видео не завершилась вовремя")
+        print("⏳ Ожидание завершения генерации видео...")
+        time.sleep(10)
+        interaction_id = getattr(interaction, "id", None)
+        if not interaction_id:
+            raise RuntimeError("Нет id взаимодействия для проверки статуса")
+        interaction = client.interactions.get(id=interaction_id)
+
+    status = getattr(interaction, "status", None)
+    if status not in (None, "completed"):
+        raise RuntimeError(f"Генерация видео завершилась со статусом {status}")
+    return interaction
 
 
 def generate_video_from_image(
@@ -454,9 +464,8 @@ def generate_video_from_image(
     agency_label: str | None = None,
 ) -> tuple[bool, str | None]:
     """
-    Оживляет фотографию на основе промпта.
+    Оживляет фотографию на основе промпта (Gemini Omni, Interactions API).
     При 503/перегрузке переключается на следующую модель из GEMINI_VIDEO_MODEL_FALLBACKS.
-    Включает защиту от обрывов сети.
     Возвращает True в случае успеха и False при ошибке.
     """
     print(f"🎬 Запуск генерации видео (Оживление видео)...")
@@ -481,10 +490,10 @@ def generate_video_from_image(
     print(f"📸 Изображение прочитано ({mime_type}). Отправка данных на сервер...")
 
     models = [model_name] if model_name else _video_model_chain()
-    operation = None
+    image_b64 = base64.b64encode(img_bytes).decode("ascii")
+    interaction = None
     last_start_error: str | None = None
 
-    # 1. ЗАЩИТА ЭТАПА ОТПРАВКИ (с fallback моделей)
     for model_idx, current_model in enumerate(models):
         if len(models) > 1:
             print(
@@ -496,26 +505,40 @@ def generate_video_from_image(
         try_next_model = False
         for attempt in range(attempts):
             try:
-                operation = client.models.generate_videos(
+                interaction = client.interactions.create(
                     model=current_model,
-                    prompt=prompt,
-                    image=types.Image(
-                        image_bytes=img_bytes,
-                        mime_type=mime_type,
-                    ),
-                    config={
-                        "aspect_ratio": "16:9",
-                        "duration_seconds": 8,
-                        "resolution": "720p",
-                    }
+                    input=[
+                        {
+                            "type": "image",
+                            "data": image_b64,
+                            "mime_type": mime_type,
+                        },
+                        {"type": "text", "text": prompt},
+                    ],
+                    background=False,
+                    store=False,
+                    stream=False,
+                    extra_body={
+                        "response_format": {
+                            "type": "video",
+                            "aspect_ratio": "16:9",
+                            "resolution": "720p",
+                            "duration": "8s",
+                        },
+                        "generation_config": {
+                            "video_config": {"task": "image_to_video"},
+                        },
+                    },
+                    timeout=900,
                 )
+                interaction = _await_video_interaction(interaction)
                 print(
-                    f"✅ Данные успешно отправлены! Запущена генерация "
-                    f"(модель: {current_model})."
+                    f"✅ Генерация завершена (модель: {current_model})."
                 )
                 break
 
             except Exception as e:
+                interaction = None
                 last_start_error = str(e)
                 has_fallback = model_idx < len(models) - 1
                 if has_fallback and (
@@ -531,7 +554,7 @@ def generate_video_from_image(
                     break
                 if _is_overload_error(e):
                     print(f"❌ Критическая ошибка при запуске: {e}")
-                    return False, f"Ошибка запуска Veo: {e}"
+                    return False, f"Ошибка запуска генерации видео: {e}"
                 if _is_retriable_error(e) and attempt < attempts - 1:
                     wait = _retry_wait_seconds(attempt)
                     print(
@@ -550,48 +573,30 @@ def generate_video_from_image(
                     try_next_model = True
                     break
                 print(f"❌ Критическая ошибка при запуске: {e}")
-                return False, f"Ошибка запуска Veo: {e}"
+                return False, f"Ошибка запуска генерации видео: {e}"
 
-        if operation:
+        if interaction:
             break
         if not try_next_model:
             break
 
-    if not operation:
+    if not interaction:
         detail = f" ({last_start_error})" if last_start_error else ""
         msg = (
-            f"Не удалось отправить запрос в Veo. "
+            f"Не удалось отправить запрос на генерацию видео. "
             f"Проверьте сеть и GEMINI_API_KEY{detail}."
         )
         print(f"❌ {msg}")
         return False, msg
 
-    # 2. ЗАЩИТА ЭТАПА ОЖИДАНИЯ
-    while not operation.done:
-        try:
-            print("⏳ Ожидание завершения генерации видео...")
-            time.sleep(10)
-            operation = client.operations.get(operation)
-        except Exception as e:
-            if _is_retriable_error(e):
-                print(f"⚠️ Сетевой сбой при проверке статуса, повторяем... ({e})")
-                time.sleep(10)
-                continue
-            print(f"❌ Ошибка при проверке статуса: {e}")
-            time.sleep(10)
-            continue
-
-    # 3. ЗАЩИТА ЭТАПА СКАЧИВАНИЯ
     try:
-        if not operation.response or not operation.response.generated_videos:
-            return False, "Veo не вернул видео в ответе"
-        generated = operation.response.generated_videos[0]
-        _save_generated_video_file(generated, output_video_path)
+        video_bytes = _video_bytes_from_interaction(interaction)
+        Path(output_video_path).write_bytes(video_bytes)
         print(
             f"{_success_ready_prefix(agency_label)}"
             f"Видео сохранено как {output_video_path}"
         )
         return True, None
     except Exception as e:
-        print(f"❌ Ошибка при скачивании или сохранении: {e}")
+        print(f"❌ Ошибка при сохранении видео: {e}")
         return False, f"Ошибка сохранения видео: {e}"

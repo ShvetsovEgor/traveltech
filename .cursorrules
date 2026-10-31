@@ -5,7 +5,7 @@ Your task is to build a production-ready, highly stable interactive kiosk applic
 ## 1. Tech Stack & Tools
 - **Frontend**: React (Functional Components, Hooks), Tailwind CSS, Lucide React for icons.
 - **Backend**: Python 3.10+, FastAPI, Pydantic, Redis (for sessions/cache), BackgroundTasks/Celery.
-- **AI Integration**: Google GenAI SDK (`gemini-2.5-flash-image`, `veo-3.1-lite-generate-preview`).
+- **AI Integration**: Google GenAI SDK (`gemini-2.5-flash-image`, `gemini-omni-1.1-flash`).
 
 ## 2. Frontend Development & UI/UX Rules (Apple HIG)
 - **Styling**: Strictly use Tailwind CSS. No inline styles.
