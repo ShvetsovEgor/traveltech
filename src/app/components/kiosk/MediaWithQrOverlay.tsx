@@ -177,7 +177,7 @@ export function MediaWithQrOverlay({
           </button>
         )}
 
-        {isImage && qrPixelSize > 0 && (
+        {qrPixelSize > 0 && (
           <div
             className="pointer-events-none absolute right-0 bottom-0 z-10 flex translate-x-1/4 translate-y-1/4 items-center justify-center rounded-xl bg-white p-1 shadow-xl ring-1 ring-border"
             style={{ width: qrPixelSize, height: qrPixelSize }}

@@ -261,6 +261,13 @@ def create_app() -> FastAPI:
             StaticFiles(directory=str(artists_dir)),
             name="artists",
         )
+    showcase_dir = static_root / "artist_showcase"
+    showcase_dir.mkdir(parents=True, exist_ok=True)
+    app.mount(
+        "/static/artist_showcase",
+        StaticFiles(directory=str(showcase_dir)),
+        name="artist_showcase",
+    )
 
     async def dashboard_payload() -> dict[str, Any]:
         from app.core.timezone import msk_iso, now_msk

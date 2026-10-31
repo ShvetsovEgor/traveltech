@@ -7,6 +7,7 @@ import { useKiosk } from "../../context/KioskContext";
 import { KIOSK_DISPLAY_NAMES } from "../../config/kiosk";
 import { buildGuideAuthUrl, getKioskIdFromSearch } from "../../utils/kioskLocation";
 import { KioskScreen, NetworkStatusLine, TravelTechHeading } from "../kiosk";
+import { RedirectToDefaultKiosk } from "./RedirectToDefaultKiosk";
 
 type GuideKioskQrScreenProps = {
   onScreenTap?: () => void;
@@ -27,19 +28,7 @@ export function GuideKioskQrScreen({ onScreenTap }: GuideKioskQrScreenProps) {
   );
 
   if (!effectiveKioskId) {
-    return (
-      <KioskScreen
-        className="bg-gradient-to-br from-accent via-primary to-accent"
-        contentClassName="flex items-center justify-center"
-      >
-        <Typography.Paragraph className="max-w-md text-center text-lg text-white/90">
-          Укажите киоск в адресе:{" "}
-          <Typography.Code className="rounded bg-white/20 px-2 py-1">
-            ?location=Popova
-          </Typography.Code>
-        </Typography.Paragraph>
-      </KioskScreen>
-    );
+    return <RedirectToDefaultKiosk />;
   }
 
   return (

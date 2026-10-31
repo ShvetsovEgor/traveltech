@@ -116,3 +116,29 @@
 @utility animate-loading-step-glow {
   animation: loading-step-glow 1.35s ease-in-out infinite;
 }
+
+@keyframes marquee-up {
+  from {
+    transform: translateY(0);
+  }
+  to {
+    transform: translateY(-50%);
+  }
+}
+
+@keyframes marquee-down {
+  from {
+    transform: translateY(-50%);
+  }
+  to {
+    transform: translateY(0);
+  }
+}
+
+@utility animate-marquee-up {
+  animation: marquee-up 36s linear infinite;
+}
+
+@utility animate-marquee-down {
+  animation: marquee-down 36s linear infinite;
+}

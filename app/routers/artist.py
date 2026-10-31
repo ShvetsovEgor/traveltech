@@ -1,15 +1,20 @@
 from fastapi import APIRouter, File, Form, HTTPException, UploadFile, status
 
 from app.core.prompt_engine import PromptEngine
-from app.core.storage import save_upload
+from app.core.storage import list_showcase_image_urls, save_upload
 from app.database import get_session_factory
 from app.dependencies import DbSession, SecurityDep
 from app.models.enums import AppType
-from app.models.pydantic_schemas import GenerateTaskResponse
+from app.models.pydantic_schemas import ArtistShowcaseResponse, GenerateTaskResponse
 from app.services.audit import write_audit
 from app.services.task_manager import TaskManager
 
 router = APIRouter()
+
+
+@router.get("/showcase", response_model=ArtistShowcaseResponse)
+async def artist_showcase() -> ArtistShowcaseResponse:
+    return ArtistShowcaseResponse(images=list_showcase_image_urls())
 
 
 @router.post("/generate", response_model=GenerateTaskResponse)

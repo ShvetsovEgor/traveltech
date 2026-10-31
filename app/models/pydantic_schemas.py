@@ -66,6 +66,10 @@ class GenerateTaskResponse(BaseModel):
     task_id: str
 
 
+class ArtistShowcaseResponse(BaseModel):
+    images: list[str]
+
+
 class StickerPreviewItem(BaseModel):
     emotion_id: str
     label: str

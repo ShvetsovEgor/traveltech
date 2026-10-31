@@ -43,6 +43,23 @@ def result_path(task_id: str, extension: str) -> Path:
     return results_dir() / f"{task_id}{ext}"
 
 
+_SHOWCASE_SUFFIXES = {".jpeg", ".jpg", ".png", ".webp"}
+SHOWCASE_DIR = Path("static/artist_showcase")
+SHOWCASE_URL_PREFIX = "/static/artist_showcase"
+
+
+def list_showcase_image_urls() -> list[str]:
+    """Зафиксированный набор примеров. Квота static/results его не удаляет."""
+    SHOWCASE_DIR.mkdir(parents=True, exist_ok=True)
+    files = [
+        path
+        for path in SHOWCASE_DIR.iterdir()
+        if path.is_file() and path.suffix.lower() in _SHOWCASE_SUFFIXES
+    ]
+    files.sort(key=lambda path: path.name)
+    return [f"{SHOWCASE_URL_PREFIX}/{path.name}" for path in files]
+
+
 def result_url(task_id: str, extension: str) -> str:
     settings = get_settings()
     ext = extension if extension.startswith(".") else f".{extension}"

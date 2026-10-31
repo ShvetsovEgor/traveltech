@@ -2,6 +2,8 @@
 export const STATIC_FRONTEND_HOSTS = [
   "missioninnopolis.ru",
   "www.missioninnopolis.ru",
+  "traveltech-innopolis.ru",
+  "www.traveltech-innopolis.ru",
 ] as const;
 
 /** Актуальный backend на Render (если VITE_API_URL не задан при сборке). */

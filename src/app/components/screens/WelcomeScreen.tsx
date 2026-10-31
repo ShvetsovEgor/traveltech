@@ -10,6 +10,7 @@ import {
 import type { InteractiveItem } from "../../config/kiosk";
 import { getKioskIdFromSearch } from "../../utils/kioskLocation";
 import { InteractiveStrip, KioskScreen, NetworkStatusLine, TravelTechHeading } from "../kiosk";
+import { RedirectToDefaultKiosk } from "./RedirectToDefaultKiosk";
 
 export function WelcomeScreen() {
   const navigate = useNavigate();
@@ -34,20 +35,7 @@ export function WelcomeScreen() {
   };
 
   if (!effectiveKioskId) {
-    return (
-      <KioskScreen
-        className="items-center justify-center bg-accent"
-        contentClassName="flex items-center justify-center"
-      >
-        <TravelTechHeading className="mb-4 text-3xl text-accent-foreground sm:text-4xl" />
-        <Typography.Paragraph className="max-w-lg text-center text-lg text-accent-foreground/90 sm:text-xl">
-          Укажите киоск в адресе:{" "}
-          <Typography.Code className="rounded bg-accent-foreground/20 px-2 py-1">
-            ?location=Popova
-          </Typography.Code>
-        </Typography.Paragraph>
-      </KioskScreen>
-    );
+    return <RedirectToDefaultKiosk />;
   }
 
   return (
