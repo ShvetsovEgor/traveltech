@@ -19,11 +19,12 @@ _LOCK = threading.Lock()
 def enforce_results_image_quota(*, protect: set[Path] | None = None) -> int:
     """
     Если static/results занял >= 70% квоты (по умолчанию 512 МБ),
-    удаляет самые старые картинки и видео, пока занято меньше порога.
+    удаляет самые старые картинки и видео, пока занято не станет 40%.
     """
     settings = get_settings()
     quota_mb = settings.results_storage_quota_mb
     ratio = settings.results_storage_cleanup_ratio
+    target_ratio = settings.results_storage_target_ratio
     if quota_mb <= 0 or ratio <= 0:
         return 0
     root = Path(settings.static_results_dir)
@@ -31,6 +32,7 @@ def enforce_results_image_quota(*, protect: set[Path] | None = None) -> int:
         root,
         quota_bytes=quota_mb * 1024 * 1024,
         ratio=ratio,
+        target_ratio=target_ratio,
         protect=protect,
     )
 
@@ -40,19 +42,22 @@ def enforce_image_quota(
     *,
     quota_bytes: int,
     ratio: float = 0.7,
+    target_ratio: float = 0.4,
     protect: set[Path] | None = None,
 ) -> int:
     if quota_bytes <= 0 or ratio <= 0 or not root.is_dir():
         return 0
 
-    threshold = int(quota_bytes * ratio)
+    trigger = int(quota_bytes * ratio)
+    stop_ratio = target_ratio if 0 < target_ratio <= ratio else ratio
+    target = int(quota_bytes * stop_ratio)
     protected_files = {p.resolve() for p in (protect or set()) if p.is_file()}
     protected_dirs = [p.resolve() for p in (protect or set()) if p.is_dir()]
 
     with _LOCK:
         files = [p for p in root.rglob("*") if p.is_file()]
         total = sum(p.stat().st_size for p in files)
-        if total < threshold:
+        if total < trigger:
             return 0
 
         media = sorted(
@@ -61,7 +66,7 @@ def enforce_image_quota(
         )
         deleted = 0
         for path in media:
-            if total < threshold:
+            if total <= target:
                 break
             resolved = path.resolve()
             if resolved in protected_files or any(
@@ -77,29 +82,30 @@ def enforce_image_quota(
             total -= size
             deleted += 1
             logger.info(
-                "Квота результатов: удалён %s (%s байт), осталось %s / %s",
+                "Квота результатов: удалён %s (%s байт), осталось %s / цель %s",
                 path.name,
                 size,
                 total,
-                threshold,
+                target,
             )
 
         _remove_empty_dirs(root)
 
-        if total >= threshold:
+        if total > target:
             logger.warning(
                 "Каталог результатов всё ещё %.0f%% квоты после удаления %s файлов "
-                "(защищённые файлы не трогаем)",
+                "(цель %.0f%%, защищённые файлы не трогаем)",
                 100 * total / quota_bytes,
                 deleted,
+                100 * stop_ratio,
             )
         elif deleted:
             logger.info(
-                "Квота результатов: удалено %s файлов, занято %s из %s байт (порог %s)",
+                "Квота результатов: удалено %s файлов, занято %s из %s байт (цель %s)",
                 deleted,
                 total,
                 quota_bytes,
-                threshold,
+                target,
             )
         return deleted
 
