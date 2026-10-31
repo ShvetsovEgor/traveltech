@@ -387,6 +387,7 @@ class TaskManager:
         fallback_prompt: str | None = None,
     ) -> None:
         out = result_path(task_id, ".jpeg")
+        _enforce_results_quota()
         _, agency_label = await resolve_agency_for_interaction(
             self.redis,
             interaction_token,
@@ -437,6 +438,7 @@ class TaskManager:
         db_factory,
     ) -> None:
         out = result_path(task_id, ".mp4")
+        _enforce_results_quota()
         _, agency_label = await resolve_agency_for_interaction(
             self.redis,
             interaction_token,
@@ -490,6 +492,7 @@ class TaskManager:
         previews: list[dict[str, str]] = []
         task_folder = results_dir() / task_id
         task_folder.mkdir(parents=True, exist_ok=True)
+        _enforce_results_quota()
         _, agency_label = await resolve_agency_for_interaction(
             self.redis,
             interaction_token,
@@ -599,6 +602,15 @@ class TaskManager:
                 )
         finally:
             cleanup_task_input(task_id)
+
+
+def _enforce_results_quota() -> None:
+    try:
+        from app.core.results_quota import enforce_results_image_quota
+
+        enforce_results_image_quota()
+    except Exception:
+        logger.exception("Results quota cleanup failed")
 
 
 def _call_generate_stylized_image(

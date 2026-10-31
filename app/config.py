@@ -63,6 +63,9 @@ class Settings(BaseSettings):
     upload_base_dir: str = "/tmp/uploads"
     static_results_dir: str = "static/results"
     static_url_prefix: str = "/static/results"
+    # Диск сервера 512 МБ: при 70% занятого каталога результатов удаляем старые картинки.
+    results_storage_quota_mb: int = 512
+    results_storage_cleanup_ratio: float = 0.7
 
     # Public base URL for result_url in responses
     public_base_url: str = "http://127.0.0.1:8000"
