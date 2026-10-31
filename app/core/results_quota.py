@@ -1,4 +1,4 @@
-"""Удаление старых картинок, когда каталог результатов доходит до 70% квоты."""
+"""Удаление старых картинок и видео, когда каталог результатов доходит до 70% квоты."""
 
 from __future__ import annotations
 
@@ -11,14 +11,15 @@ from app.config import get_settings
 logger = logging.getLogger(__name__)
 
 _IMAGE_SUFFIXES = {".jpeg", ".jpg", ".png", ".webp", ".gif"}
+_VIDEO_SUFFIXES = {".mp4", ".webm", ".mov"}
+_MEDIA_SUFFIXES = _IMAGE_SUFFIXES | _VIDEO_SUFFIXES
 _LOCK = threading.Lock()
 
 
 def enforce_results_image_quota(*, protect: set[Path] | None = None) -> int:
     """
     Если static/results занял >= 70% квоты (по умолчанию 512 МБ),
-    удаляет самые старые картинки, пока занято меньше порога.
-    Видео учитываются в объёме, но не удаляются.
+    удаляет самые старые картинки и видео, пока занято меньше порога.
     """
     settings = get_settings()
     quota_mb = settings.results_storage_quota_mb
@@ -54,12 +55,12 @@ def enforce_image_quota(
         if total < threshold:
             return 0
 
-        images = sorted(
-            (p for p in files if p.suffix.lower() in _IMAGE_SUFFIXES),
+        media = sorted(
+            (p for p in files if p.suffix.lower() in _MEDIA_SUFFIXES),
             key=lambda p: p.stat().st_mtime,
         )
         deleted = 0
-        for path in images:
+        for path in media:
             if total < threshold:
                 break
             resolved = path.resolve()
@@ -76,7 +77,7 @@ def enforce_image_quota(
             total -= size
             deleted += 1
             logger.info(
-                "Квота результатов: удалена картинка %s (%s байт), осталось %s / %s",
+                "Квота результатов: удалён %s (%s байт), осталось %s / %s",
                 path.name,
                 size,
                 total,
@@ -87,14 +88,14 @@ def enforce_image_quota(
 
         if total >= threshold:
             logger.warning(
-                "Каталог результатов всё ещё %.0f%% квоты после удаления %s картинок "
-                "(видео и защищённые файлы не трогаем)",
+                "Каталог результатов всё ещё %.0f%% квоты после удаления %s файлов "
+                "(защищённые файлы не трогаем)",
                 100 * total / quota_bytes,
                 deleted,
             )
         elif deleted:
             logger.info(
-                "Квота результатов: удалено %s картинок, занято %s из %s байт (порог %s)",
+                "Квота результатов: удалено %s файлов, занято %s из %s байт (порог %s)",
                 deleted,
                 total,
                 quota_bytes,
